@@ -26,7 +26,9 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 target_link_libraries(${PROJECT_NAME} Eigen3::Eigen)
 
 # Copy resource files to the output directory after build
-set(RESOURCE_FILES "${PROJECT_SOURCE_DIR}/resources/tle.txt")
+set(RESOURCE_FILES
+    "${PROJECT_SOURCE_DIR}/resources/tle.txt"
+    "${PROJECT_SOURCE_DIR}/resources/config.json")
 
 foreach(RESOURCE_FILE ${RESOURCE_FILES})
     add_custom_command(
