@@ -92,6 +92,6 @@ Licensed under the MIT License. See LICENSE in the project root for license info
 
 
 ## TODO
-- Fix: debugging
 - Another compiler
+- Fix: env var names are undefined (e.g., TLE_PATH)
 

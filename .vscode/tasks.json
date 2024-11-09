@@ -21,7 +21,9 @@
             "command": "cmake",
             "args": [
                 "--build",
-                "build"
+                "${workspaceFolder}/build",
+                "--config",
+                "Debug"
             ],
             "dependsOn": "CMake: Configure",
             "group": {
@@ -31,34 +33,34 @@
             "problemMatcher": [],
             "detail": "Build the CMake project in the 'build' directory."
         },
-        // {
-        //     "label": "CMake: Clean",
-        //     "type": "shell",
-        //     "command": "cmake",
-        //     "args": [
-        //         "--build",
-        //         "build",
-        //         "--target",
-        //         "clean"
-        //     ],
-        //     "problemMatcher": [],
-        //     "detail": "Clean the build output in the 'build' directory."
-        // },
         {
-            "label": "Clean Build",
+            "label": "CMake: Clean",
             "type": "shell",
-            "command": "rm",
+            "command": "cmake",
             "args": [
-                "-rf",
-                "./build",
+                "--build",
+                "build",
+                "--target",
+                "clean"
             ],
             "problemMatcher": [],
-            "detail": "Remove the build directory"
+            "detail": "Clean the build output in the 'build' directory."
         },
+        // {
+        //     "label": "Clean Build",
+        //     "type": "shell",
+        //     "command": "rm",
+        //     "args": [
+        //         "-rf",
+        //         "./build",
+        //     ],
+        //     "problemMatcher": [],
+        //     "detail": "Remove the build directory"
+        // },
         {
             "label": "Run Executable",
             "type": "shell",
-            "command": "./build/flight_dynamics_simulator",
+            "command": "./build/bin/flight_dynamics_simulator",
             "group": {
                 "kind": "test",
                 "isDefault": true

@@ -5,19 +5,11 @@
             "name": "Launch Main",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/flight_dynamics_simulator",
-            // "program": "${command:cmake.launchTargetPath}",
+            "program": "${workspaceFolder}/build/bin/flight_dynamics_simulator",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [
-                // {
-                //     // add the directory where our target was built to the PATHs
-                //     // it gets resolved by CMake Tools:
-                //     "name": "PATH",
-                //     "value": "${env:PATH}:${command:cmake.getLaunchTargetDirectory}"
-                // }
-            ],
+            "cwd": "${workspaceFolder}/build/bin",
+            "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
             "setupCommands": [
@@ -33,25 +25,5 @@
                 "engineLogging": true
             }
         }
-        // {
-        //     "name": "Launch Main",
-        //     "type": "cppdbg",
-        //     "request": "launch",
-        //     "program": "${workspaceFolder}/main.out",
-        //     "args": [],
-        //     "stopAtEntry": false,
-        //     "cwd": "${workspaceFolder}",
-        //     "environment": [],
-        //     "externalConsole": false,
-        //     "MIMode": "gdb",
-        //     "setupCommands": [
-        //         {
-        //             "description": "Enable pretty-printing for gdb",
-        //             "text": "-enable-pretty-printing",
-        //             "ignoreFailures": true
-        //         }
-        //     ],
-        //     "preLaunchTask": "Build Main"
-        // }
     ]
 }

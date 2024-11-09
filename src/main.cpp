@@ -74,7 +74,7 @@ TLE parseTLE(const std::string &line1, const std::string &line2)
 
 int main()
 {
-    std::ifstream file(TLE_PATH);
+    std::ifstream file(std::string(BUILD_OUTPUT_PATH) + "/tle.txt");
     if (!file.is_open())
     {
         std::cerr << "Failed to open file." << std::endl;
