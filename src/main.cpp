@@ -7,34 +7,10 @@
 #include <Eigen/Dense>
 #include "TLE.h"
 #include "config.hpp"
+#include "dateTime.hpp"
 
 using namespace Eigen;
 using namespace std;
-
-// Helper function to format the time_point as a string for printing
-std::string format_time(const std::chrono::system_clock::time_point &time_point)
-{
-    std::time_t time = std::chrono::system_clock::to_time_t(time_point);
-    std::tm tm = *std::localtime(&time);
-
-    char buffer[80];
-    std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &tm);
-    return std::string(buffer);
-}
-
-// Function to generate discrete time points
-std::vector<std::chrono::system_clock::time_point> generateTimePoints(
-    const std::chrono::system_clock::time_point &start_date_time,
-    const std::chrono::system_clock::time_point &end_date_time,
-    const std::chrono::milliseconds &control_time_step)
-{
-    std::vector<std::chrono::system_clock::time_point> date_times;
-    for (auto current = start_date_time; current <= end_date_time; current += control_time_step)
-    {
-        date_times.push_back(current);
-    }
-    return date_times;
-}
 
 int main()
 {
@@ -42,12 +18,12 @@ int main()
     Config config(std::string(BUILD_OUTPUT_PATH) + "/config.json");
 
     // Generate discrete time points using the function
-    auto date_times = generateTimePoints(config.getStartDateTime(), config.getEndDateTime(), config.getControlTimeStep());
+    auto date_times = DateTime::generateTimePoints(config.getStartDateTime(), config.getEndDateTime(), config.getControlTimeStep());
 
     // Output the time points
     std::cout << "Executing simulation" << std::endl;
     std::cout << "====================" << std::endl;
-    std::cout << "Start date: " << format_time(date_times.at(0)) << std::endl;
+    std::cout << "Start date: " << DateTime::formatTime(date_times.at(0)) << std::endl;
 
     try
     {

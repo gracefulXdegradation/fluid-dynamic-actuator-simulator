@@ -1,6 +1,7 @@
 #include <chrono>
 #include <fstream>
 #include "json.hpp"
+#include "dateTime.hpp"
 
 using json = nlohmann::json;
 
@@ -17,8 +18,8 @@ public:
 
     file >> config;
 
-    start_date_time = parseDateTime(config["start_date_time"]);
-    end_date_time = parseDateTime(config["end_date_time"]);
+    start_date_time = DateTime::parseDateTime(config["start_date_time"]);
+    end_date_time = DateTime::parseDateTime(config["end_date_time"]);
     control_time_step = std::chrono::milliseconds(config["control_time_step"]);
   }
 
@@ -42,18 +43,4 @@ private:
   std::chrono::system_clock::time_point start_date_time;
   std::chrono::system_clock::time_point end_date_time;
   std::chrono::milliseconds control_time_step;
-
-  static std::chrono::system_clock::time_point parseDateTime(const std::string &datetime_str)
-  {
-    std::tm tm = {};
-    std::istringstream ss(datetime_str);
-    ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");
-
-    if (ss.fail())
-    {
-      throw std::runtime_error("Failed to parse date-time string");
-    }
-
-    return std::chrono::system_clock::from_time_t(std::mktime(&tm));
-  }
 };
