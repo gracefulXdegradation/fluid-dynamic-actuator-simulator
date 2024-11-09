@@ -38,3 +38,8 @@ foreach(RESOURCE_FILE ${RESOURCE_FILES})
 endforeach()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE BUILD_OUTPUT_PATH="${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+
+# Set up testing
+add_executable(test_OrbitalMechanics tests/test_OrbitalMechanics.cpp src/OrbitalMechanics.cpp)
+enable_testing()
+add_test(NAME OrbitalMechanicsTest COMMAND test_OrbitalMechanics)

@@ -1,15 +1,11 @@
-#ifndef ORBITALMECHANICS_HPP
-#define ORBITALMECHANICS_HPP
-
-#include <iostream>
+#include "OrbitalMechanics.h"
 #include <cmath>
-#include <array>
 
 namespace OrbitalMechanics
 {
   const double mu_earth = 3.986e5; // Earth's gravitational constant (Km^3/s^2)
 
-  inline std::pair<std::array<double, 3>, std::array<double, 3>> keplerian2ijk(
+  std::pair<std::array<double, 3>, std::array<double, 3>> keplerian2ijk(
       double sma, // Semi-major axis (Km)
       double ecc, // Eccentricity
       double inc, // Inclination (rad)
@@ -51,6 +47,5 @@ namespace OrbitalMechanics
 
     return {r, v};
   }
-} // namespace OrbitalMechanics
 
-#endif // ORBITALMECHANICS_HPP
+} // namespace OrbitalMechanics

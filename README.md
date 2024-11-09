@@ -92,6 +92,7 @@ Licensed under the MIT License. See LICENSE in the project root for license info
 
 
 ## TODO
-- Another compiler
-- Fix: env var names are undefined (e.g., TLE_PATH)
+- Improvement: consider cling compiler
+- Improvement: test library, e.g. gtest https://matgomes.com/integrate-google-test-into-cmake/
+- Improvement: package manager, e.g. conan
 

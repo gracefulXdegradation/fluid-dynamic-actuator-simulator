@@ -4,7 +4,7 @@
 #include "TLE.h"
 #include "config.hpp"
 #include "dateTime.hpp"
-#include "OrbitalMechanics.hpp"
+#include "OrbitalMechanics.h"
 
 using namespace Eigen;
 using namespace std;
