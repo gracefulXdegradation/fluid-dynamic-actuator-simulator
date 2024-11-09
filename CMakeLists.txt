@@ -19,8 +19,11 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 # Collect all .cpp files in the src directory
 file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
 
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+
 # Define the executable target
 add_executable(${PROJECT_NAME} ${SOURCES})
+target_link_libraries(${PROJECT_NAME} Eigen3::Eigen)
 
 # Copy resource files to the output directory after build
 set(RESOURCE_FILES "${PROJECT_SOURCE_DIR}/resources/tle.txt")
