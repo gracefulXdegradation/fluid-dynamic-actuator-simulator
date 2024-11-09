@@ -1,5 +1,4 @@
 #include <iostream>
-#include <fstream>
 #include <string>
 #include <chrono>
 #include <ctime>
@@ -7,9 +6,8 @@
 #include <iomanip>
 #include <Eigen/Dense>
 #include "TLE.h"
-#include "json.hpp"
+#include "config.hpp"
 
-using json = nlohmann::json;
 using namespace Eigen;
 using namespace std;
 
@@ -38,37 +36,13 @@ std::vector<std::chrono::system_clock::time_point> generateTimePoints(
     return date_times;
 }
 
-// Function to parse date-time string to time_point
-std::chrono::system_clock::time_point parseDateTime(const std::string &datetime_str)
-{
-    std::tm tm = {};
-    std::istringstream ss(datetime_str);
-    ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");
-    if (ss.fail())
-    {
-        throw std::runtime_error("Failed to parse date-time string");
-    }
-    return std::chrono::system_clock::from_time_t(std::mktime(&tm));
-}
-
 int main()
 {
-    using namespace std::chrono;
-
-    // Read JSON configuration file
-    std::ifstream file(std::string(BUILD_OUTPUT_PATH) + "/config.json");
-    json config;
-    file >> config;
-
-    // Parse start and end date-times from JSON
-    auto start_date_time = parseDateTime(config["start_date_time"].get<std::string>());
-    auto end_date_time = parseDateTime(config["end_date_time"].get<std::string>());
-
-    // Define control time step of 0.5 seconds (500 milliseconds)
-    auto control_time_step = milliseconds(500);
+    // Create an instance of ConfigParser with the path to your config.json
+    Config config(std::string(BUILD_OUTPUT_PATH) + "/config.json");
 
     // Generate discrete time points using the function
-    auto date_times = generateTimePoints(start_date_time, end_date_time, control_time_step);
+    auto date_times = generateTimePoints(config.getStartDateTime(), config.getEndDateTime(), config.getControlTimeStep());
 
     // Output the time points
     std::cout << "Executing simulation" << std::endl;
