@@ -5,7 +5,7 @@
             "name": "Launch Main",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/adcs_simulator",
+            "program": "${workspaceFolder}/build/flight_dynamics_simulator",
             // "program": "${command:cmake.launchTargetPath}",
             "args": [],
             "stopAtEntry": false,

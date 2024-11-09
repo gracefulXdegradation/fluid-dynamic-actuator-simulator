@@ -4,7 +4,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 # Set the project name
-project (adcs_simulator VERSION 1.0)
+project (flight_dynamics_simulator VERSION 1.0)
 
 # Create a sources variable with a link to all cpp files to compile
 set(SOURCES
