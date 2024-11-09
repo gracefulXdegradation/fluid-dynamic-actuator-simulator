@@ -1,9 +1,5 @@
 #include <iostream>
 #include <string>
-#include <chrono>
-#include <ctime>
-#include <vector>
-#include <iomanip>
 #include <Eigen/Dense>
 #include "TLE.h"
 #include "config.hpp"
@@ -15,23 +11,23 @@ using namespace std;
 int main()
 {
     // Create an instance of ConfigParser with the path to your config.json
-    Config config(std::string(BUILD_OUTPUT_PATH) + "/config.json");
+    Config config(string(BUILD_OUTPUT_PATH) + "/config.json");
 
     // Generate discrete time points using the function
     auto date_times = DateTime::generateTimePoints(config.getStartDateTime(), config.getEndDateTime(), config.getControlTimeStep());
 
     // Output the time points
-    std::cout << "Executing simulation" << std::endl;
-    std::cout << "====================" << std::endl;
-    std::cout << "Start date: " << DateTime::formatTime(date_times.at(0)) << std::endl;
+    cout << "Executing simulation" << endl;
+    cout << "====================" << endl;
+    cout << "Start date: " << DateTime::formatTime(date_times.at(0)) << endl;
 
     try
     {
-        TLE tle = TLE::fromFile(std::string(BUILD_OUTPUT_PATH) + "/tle.txt");
+        TLE tle = TLE::fromFile(string(BUILD_OUTPUT_PATH) + "/tle.txt");
 
-        std::cout << "Satellite Number: " << tle.getSatelliteNumber() << std::endl;
-        std::cout << "Epoch Year: " << tle.getEpochYear() << std::endl;
-        std::cout << "Mean Motion: " << tle.getMeanMotion() << std::endl;
+        cout << "Satellite Number: " << tle.getSatelliteNumber() << endl;
+        cout << "Epoch Year: " << tle.getEpochYear() << endl;
+        cout << "Mean Motion: " << tle.getMeanMotion() << endl;
 
         MatrixXd A(2, 3);
         A << 1, 2, 3,
@@ -48,9 +44,9 @@ int main()
         cout << "Result of (A * B)^T:\n"
              << transposedResult << endl;
     }
-    catch (const std::exception &e)
+    catch (const exception &e)
     {
-        std::cerr << "Error: " << e.what() << std::endl;
+        cerr << "Error: " << e.what() << endl;
         return 1;
     }
     return 0;

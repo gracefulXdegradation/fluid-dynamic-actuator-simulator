@@ -11,8 +11,9 @@
 
 namespace DateTime
 {
+  using namespace std::chrono;
 
-  inline std::chrono::system_clock::time_point parseDateTime(const std::string &datetime_str)
+  inline system_clock::time_point parseDateTime(const std::string &datetime_str)
   {
     std::tm tm = {};
     std::istringstream ss(datetime_str);
@@ -23,15 +24,15 @@ namespace DateTime
       throw std::runtime_error("Failed to parse date-time string");
     }
 
-    return std::chrono::system_clock::from_time_t(std::mktime(&tm));
+    return system_clock::from_time_t(std::mktime(&tm));
   }
 
-  inline std::vector<std::chrono::system_clock::time_point> generateTimePoints(
-      const std::chrono::system_clock::time_point &start_date_time,
-      const std::chrono::system_clock::time_point &end_date_time,
-      const std::chrono::milliseconds &control_time_step)
+  inline std::vector<system_clock::time_point> generateTimePoints(
+      const system_clock::time_point &start_date_time,
+      const system_clock::time_point &end_date_time,
+      const milliseconds &control_time_step)
   {
-    std::vector<std::chrono::system_clock::time_point> date_times;
+    std::vector<system_clock::time_point> date_times;
     for (auto current = start_date_time; current <= end_date_time; current += control_time_step)
     {
       date_times.push_back(current);
@@ -39,9 +40,9 @@ namespace DateTime
     return date_times;
   }
 
-  inline std::string formatTime(std::chrono::system_clock::time_point tp)
+  inline std::string formatTime(system_clock::time_point tp)
   {
-    std::time_t time = std::chrono::system_clock::to_time_t(tp);
+    std::time_t time = system_clock::to_time_t(tp);
     std::tm *tm = std::localtime(&time);
 
     std::ostringstream oss;

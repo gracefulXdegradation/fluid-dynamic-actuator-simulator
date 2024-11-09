@@ -4,6 +4,7 @@
 #include "dateTime.hpp"
 
 using json = nlohmann::json;
+using namespace std::chrono;
 
 class Config
 {
@@ -20,27 +21,27 @@ public:
 
     start_date_time = DateTime::parseDateTime(config["start_date_time"]);
     end_date_time = DateTime::parseDateTime(config["end_date_time"]);
-    control_time_step = std::chrono::milliseconds(config["control_time_step"]);
+    control_time_step = milliseconds(config["control_time_step"]);
   }
 
-  std::chrono::system_clock::time_point getStartDateTime() const
+  system_clock::time_point getStartDateTime() const
   {
     return start_date_time;
   }
 
-  std::chrono::system_clock::time_point getEndDateTime() const
+  system_clock::time_point getEndDateTime() const
   {
     return end_date_time;
   }
 
-  std::chrono::milliseconds getControlTimeStep() const
+  milliseconds getControlTimeStep() const
   {
     return control_time_step;
   }
 
 private:
   json config;
-  std::chrono::system_clock::time_point start_date_time;
-  std::chrono::system_clock::time_point end_date_time;
-  std::chrono::milliseconds control_time_step;
+  system_clock::time_point start_date_time;
+  system_clock::time_point end_date_time;
+  milliseconds control_time_step;
 };
