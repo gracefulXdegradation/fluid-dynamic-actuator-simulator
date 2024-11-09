@@ -1,0 +1,71 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "CMake: Configure",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "-S",
+                ".",
+                "-B",
+                "build"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "detail": "Configure the CMake project in the 'build' directory."
+        },
+        {
+            "label": "CMake: Build",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "build"
+            ],
+            "dependsOn": "CMake: Configure",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [],
+            "detail": "Build the CMake project in the 'build' directory."
+        },
+        // {
+        //     "label": "CMake: Clean",
+        //     "type": "shell",
+        //     "command": "cmake",
+        //     "args": [
+        //         "--build",
+        //         "build",
+        //         "--target",
+        //         "clean"
+        //     ],
+        //     "problemMatcher": [],
+        //     "detail": "Clean the build output in the 'build' directory."
+        // },
+        {
+            "label": "Clean Build",
+            "type": "shell",
+            "command": "rm",
+            "args": [
+                "-rf",
+                "./build",
+            ],
+            "problemMatcher": [],
+            "detail": "Remove the build directory"
+        },
+        {
+            "label": "Run Executable",
+            "type": "shell",
+            "command": "./build/adcs_simulator",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "dependsOn": "CMake: Build",
+            "problemMatcher": [],
+            "detail": "Run the built executable."
+        }
+    ]
+}
