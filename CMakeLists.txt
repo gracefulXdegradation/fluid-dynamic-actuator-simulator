@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.10)
 project(flight_dynamics_simulator VERSION 1.0)
 
 # Set the C++ standard
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(CMAKE_BUILD_TYPE Debug)
@@ -26,7 +26,9 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 target_link_libraries(${PROJECT_NAME} Eigen3::Eigen)
 
 # Copy resource files to the output directory after build
-set(RESOURCE_FILES "${PROJECT_SOURCE_DIR}/resources/tle.txt")
+set(RESOURCE_FILES
+    "${PROJECT_SOURCE_DIR}/resources/tle.txt"
+    "${PROJECT_SOURCE_DIR}/resources/config.json")
 
 foreach(RESOURCE_FILE ${RESOURCE_FILES})
     add_custom_command(
@@ -36,3 +38,8 @@ foreach(RESOURCE_FILE ${RESOURCE_FILES})
 endforeach()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE BUILD_OUTPUT_PATH="${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+
+# Set up testing
+add_executable(test_OrbitalMechanics tests/test_OrbitalMechanics.cpp src/OrbitalMechanics.cpp)
+enable_testing()
+add_test(NAME OrbitalMechanicsTest COMMAND test_OrbitalMechanics)
