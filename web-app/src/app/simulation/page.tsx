@@ -5,6 +5,7 @@ import Link from 'next/link';
 const SimulationsPage = () => {
   const [entries, setEntries] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  
 
   // Fetch entries from the API
   const fetchEntries = async () => {
