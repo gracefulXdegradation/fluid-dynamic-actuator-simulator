@@ -13,6 +13,8 @@ namespace DateTime
 {
   using namespace std::chrono;
 
+  constexpr std::chrono::seconds SECONDS_IN_A_DAY(86400);
+
   inline system_clock::time_point parseDateTime(const std::string &datetime_str)
   {
     std::tm tm = {};
@@ -50,6 +52,6 @@ namespace DateTime
     return oss.str();
   }
 
-} // namespace DateTime
+}
 
-#endif // DATETIME_HPP
+#endif

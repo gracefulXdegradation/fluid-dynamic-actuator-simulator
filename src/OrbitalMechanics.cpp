@@ -1,5 +1,6 @@
-#include "OrbitalMechanics.h"
 #include <cmath>
+#include "OrbitalMechanics.h"
+#include "MathHelpers.hpp"
 
 namespace OrbitalMechanics
 {
@@ -48,4 +49,35 @@ namespace OrbitalMechanics
     return {r, v};
   }
 
-} // namespace OrbitalMechanics
+  std::vector<double> eccentricAnomaly(const std::vector<std::chrono::system_clock::time_point> &timestamps, double M, double mean_motion, double ecc)
+  {
+    const double tolerance = 1e-9;
+    std::vector<double> eccentricAnomalies;
+    eccentricAnomalies.reserve(timestamps.size());
+
+    for (const auto &timestamp : timestamps)
+    {
+      // Calculate the elapsed time in seconds since the start timestamp
+      auto elapsed_duration = timestamp.time_since_epoch();
+      double elapsed_seconds = std::chrono::duration_cast<std::chrono::seconds>(elapsed_duration).count();
+
+      // Calculate the mean anomaly for the current timestamp
+      double current_mean_anomaly = MathHelpers::wrapTo2Pi(M + elapsed_seconds * mean_motion);
+
+      // Solve for the eccentric anomaly using Newton's method
+      double En = current_mean_anomaly;
+      double Ens = En - (En - ecc * std::sin(En) - current_mean_anomaly) / (1 - ecc * std::cos(En));
+
+      while (std::abs(Ens - En) > tolerance)
+      {
+        En = Ens;
+        Ens = En - (En - ecc * std::sin(En) - current_mean_anomaly) / (1 - ecc * std::cos(En));
+      }
+
+      eccentricAnomalies.push_back(MathHelpers::wrapTo2Pi(Ens));
+    }
+
+    return eccentricAnomalies;
+  }
+
+}

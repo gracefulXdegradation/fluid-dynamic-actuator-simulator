@@ -1,7 +1,9 @@
 #include <iostream>
 #include <array>
 #include <cmath>
+#include <chrono>
 #include "OrbitalMechanics.h"
+#include "dateTime.hpp"
 
 bool areApproxEqual(const std::array<double, 3> &arr1, const std::array<double, 3> &arr2, double tolerance = 1e-6)
 {
@@ -15,7 +17,7 @@ bool areApproxEqual(const std::array<double, 3> &arr1, const std::array<double, 
   return true;
 }
 
-int main()
+bool test_keplerian2ijk()
 {
   // Test input values
   double sma = 6852.6;  // Semi-major axis in Km
@@ -47,4 +49,43 @@ int main()
   }
 
   return 0;
+}
+
+bool test_eccentricAnomaly()
+{
+  // Define test parameters
+  double initial_mean_anomaly = 1.5638; // Example mean anomaly (radians)
+  double eccentricity = 0.0013;         // Example eccentricity
+  double mean_motion = 0.0011;          // Mean motion (radians per second)
+
+  std::vector<std::chrono::system_clock::time_point> timestamps = {
+      DateTime::parseDateTime("2023-07-04 14:25:00")
+      // std::chrono::system_clock::time_point(1688480700000000000),
+      // std::chrono::system_clock::time_point(1688480700500000000),
+      // std::chrono::system_clock::time_point(1688480701000000000),
+      // std::chrono::system_clock::time_point(1688480701500000000),
+      // std::chrono::system_clock::time_point(1688480702000000000),
+  };
+
+  // Calculate the eccentric anomalies
+  auto eccentricAnomalies = OrbitalMechanics::eccentricAnomaly(timestamps, initial_mean_anomaly, mean_motion, eccentricity);
+
+  // Check results
+  for (size_t i = 0; i < eccentricAnomalies.size(); ++i)
+  {
+    std::cout << "Eccentric Anomaly at t[" << i << "]: " << eccentricAnomalies[i] << " radians\n";
+  }
+
+  // Optional: Add assertions with known expected values for exact tests
+  // e.g., assert(std::abs(eccentricAnomalies[0] - expected_value) < 1e-9);
+
+  std::cout << "Eccentric anomaly test completed.\n";
+  return 1;
+}
+
+int main()
+{
+  bool result_keplerian2ijk = test_keplerian2ijk();
+  bool result_eccentricAnomaly = test_eccentricAnomaly();
+  return result_keplerian2ijk || result_eccentricAnomaly;
 }

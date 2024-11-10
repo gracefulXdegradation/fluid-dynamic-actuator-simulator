@@ -87,12 +87,14 @@ Licensed under the MIT License. See LICENSE in the project root for license info
 
 
 
-- CMD + Shift + B to build
-- CMD + Shift + P => Tasks: Run Task => Run Executable
+- <kbd>CMD + Shift + B</kbd> to build
+- <kbd>CMD + Shift + P</kbd> => Tasks: Run Task => Run Executable
 
 
 ## TODO
-- Improvement: consider cling compiler
-- Improvement: test library, e.g. gtest https://matgomes.com/integrate-google-test-into-cmake/
-- Improvement: package manager, e.g. conan
+- Improvement: consider **cling** for a compiler.
+- Improvement: test library, e.g. [gtest](https://matgomes.com/integrate-google-test-into-cmake/) or [Catch2](https://github.com/catchorg/Catch2).
+- Improvement: package manager, e.g. **conan**.
+- Improvement: strong types or unit libraries in the OrbitalMechanics namespace (**kilometers** and **radians** instead of **double**). Possible solutions: type-safe wrappers using **struct**, type aliases with **std::chrono::duration**, unit libraries like **MPark.Units** or **Boost.Units**.
+- Improvement: consider [OTL](https://github.com/Jmbryan/OTL) for orbital mechanics.
 

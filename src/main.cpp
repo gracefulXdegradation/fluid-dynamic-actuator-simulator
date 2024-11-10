@@ -11,20 +11,6 @@ using namespace std;
 
 int main()
 {
-    // Example input (Keplerian elements)
-    double sma = 6852.6;  // Semi-major axis in Km
-    double ecc = 0.0013;  // Eccentricity
-    double inc = 1.7047;  // Inclination in radians
-    double w = 4.7190;    // Argument of Perigee in radians
-    double nu = 1.7497;   // True Anomaly in radians
-    double raan = 2.7630; // Right Ascension of Ascending Node in radians
-
-    // Get the position and velocity vectors
-    auto [r, v] = OrbitalMechanics::keplerian2ijk(sma, ecc, inc, w, nu, raan);
-
-    // Output the results
-    std::cout << "Position: [" << r[0] << ", " << r[1] << ", " << r[2] << "] Km" << std::endl;
-    std::cout << "Velocity: [" << v[0] << ", " << v[1] << ", " << v[2] << "] Km/s" << std::endl;
 
     // Create an instance of ConfigParser with the path to your config.json
     Config config(string(BUILD_OUTPUT_PATH) + "/config.json");
@@ -41,9 +27,9 @@ int main()
     {
         TLE tle = TLE::fromFile(string(BUILD_OUTPUT_PATH) + "/tle.txt");
 
-        cout << "Satellite Number: " << tle.getSatelliteNumber() << endl;
-        cout << "Epoch Year: " << tle.getEpochYear() << endl;
-        cout << "Mean Motion: " << tle.getMeanMotion() << endl;
+        cout << "Epoch: " << DateTime::formatTime(tle.getEpoch()) << endl;
+
+        auto eccentricAnomalies = OrbitalMechanics::eccentricAnomaly(date_times, tle.getMeanAnomaly(), tle.getMeanMotion(), tle.getEccentricity());
 
         MatrixXd A(2, 3);
         A << 1, 2, 3,

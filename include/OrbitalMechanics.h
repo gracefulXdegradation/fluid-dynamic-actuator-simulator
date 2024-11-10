@@ -2,6 +2,8 @@
 #define ORBITALMECHANICS_H
 
 #include <array>
+#include <vector>
+#include <chrono>
 
 namespace OrbitalMechanics
 {
@@ -16,6 +18,9 @@ namespace OrbitalMechanics
       double raan // Right Ascension of Ascending Node (rad)
   );
 
-} // namespace OrbitalMechanics
+  // Calculate eccentric anomalies for every timestamp (in seconds) based on a single mean anomaly, mean motion, and eccentricity
+  std::vector<double> eccentricAnomaly(const std::vector<std::chrono::system_clock::time_point> &timestamps, double M, double mean_motion, double ecc);
 
-#endif // ORBITALMECHANICS_H
+}
+
+#endif
