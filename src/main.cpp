@@ -6,8 +6,58 @@
 #include "dateTime.hpp"
 #include "OrbitalMechanics.h"
 
+#include <vector>
+#include <fstream>
+#include <sstream>
+#include <filesystem>
+
 using namespace Eigen;
 using namespace std;
+
+namespace fs = std::filesystem;
+
+template <std::size_t N>
+void writematrix(const std::vector<std::array<double, N>> &matrix, const std::string &directory, const std::string &filename)
+{
+    // Ensure the directory exists, create it if it does not
+    if (!fs::exists(directory))
+    {
+        fs::create_directories(directory);
+    }
+
+    // Construct the full file path
+    std::string filePath = directory + "/" + filename;
+
+    // Open file in write mode
+    std::ofstream file(filePath);
+    if (!file.is_open())
+    {
+        std::cerr << "Error: Could not open file for writing: " << filePath << std::endl;
+        return;
+    }
+
+    for (const auto &row : matrix)
+    {
+        for (std::size_t i = 0; i < row.size(); ++i)
+        {
+            file << row[i];
+            if (i < row.size() - 1)
+            {
+                file << ",";
+            }
+        }
+        file << "\n";
+    }
+    file.close();
+    if (file.good())
+    {
+        std::cout << "File written successfully to " << filePath << std::endl;
+    }
+    else
+    {
+        std::cerr << "Error: Failed to write to file: " << filePath << std::endl;
+    }
+}
 
 int main()
 {
@@ -42,20 +92,26 @@ int main()
             velocity_vectors.push_back(i_v);
         }
 
-        MatrixXd A(2, 3);
-        A << 1, 2, 3,
-            4, 5, 6;
+        // Save to file
+        writematrix(radius_vectors, "./output", "i_r.csv");
+        writematrix(velocity_vectors, "./output", "i_v.csv");
 
-        MatrixXd B(3, 2);
-        B << 7, 8,
-            9, 10,
-            11, 12;
+        std::cout << "Data saved to output.txt" << std::endl;
 
-        MatrixXd result = A * B;
-        MatrixXd transposedResult = result.transpose();
+        // MatrixXd A(2, 3);
+        // A << 1, 2, 3,
+        //     4, 5, 6;
 
-        cout << "Result of (A * B)^T:\n"
-             << transposedResult << endl;
+        // MatrixXd B(3, 2);
+        // B << 7, 8,
+        //     9, 10,
+        //     11, 12;
+
+        // MatrixXd result = A * B;
+        // MatrixXd transposedResult = result.transpose();
+
+        // cout << "Result of (A * B)^T:\n"
+        //      << transposedResult << endl;
     }
     catch (const exception &e)
     {

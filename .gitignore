@@ -331,6 +331,7 @@ ASALocalRun/
 
 # Build output for this sample
 build
+output
 
 # Misc
 .DS_Store
