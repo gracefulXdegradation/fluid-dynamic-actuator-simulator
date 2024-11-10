@@ -60,6 +60,6 @@ namespace DB
     }
   }
 
-} // namespace DB
+}
 
-#endif // DB_HPP
+#endif

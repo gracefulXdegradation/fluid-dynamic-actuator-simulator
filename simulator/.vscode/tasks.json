@@ -63,7 +63,7 @@
             "label": "Clean output",
             "type": "shell",
             // TODO: fix user permissions in the container and remove sudo
-            "command": "sudo rm -rf output/*.csv",
+            "command": "sudo find output -type f ! -name 'README.md' -delete && sudo find output -type d -empty -delete",
             "problemMatcher": [],
             "detail": "Cleans up .csv files in the output directory."
         }

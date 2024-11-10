@@ -43,9 +43,11 @@ int main()
             velocity_vectors.push_back(i_v);
         }
 
+        auto ts = DateTime::getCurrentTimestamp();
+
         // Save to file
-        DB::writematrix(radius_vectors, "./output", "i_r.csv");
-        DB::writematrix(velocity_vectors, "./output", "i_v.csv");
+        DB::writematrix(radius_vectors, "./output/" + ts, "i_r.csv");
+        DB::writematrix(velocity_vectors, "./output/" + ts, "i_v.csv");
 
         std::cout << "Data saved to output.txt" << std::endl;
 
