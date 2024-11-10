@@ -4,11 +4,26 @@
 	"service": "web-app",
 	"shutdownAction": "none",
 	"workspaceFolder": "/workspace/web-app",
+	"updateContentCommand": "npm install",
+	"postAttachCommand": "npm run dev",
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"esbenp.prettier-vscode"
+				"streetsidesoftware.code-spell-checker",
+				"dbaeumer.vscode-eslint",
+				"esbenp.prettier-vscode",
+				"DavidAnson.vscode-markdownlint",
+				"ms-vscode-remote.remote-containers"
 			]
 		}
-	}
+	},
+	"portsAttributes": {
+		"3000": {
+			"label": "Application",
+			"onAutoForward": "openPreview"
+		}
+	},
+	"forwardPorts": [
+		3000
+	]
 }
