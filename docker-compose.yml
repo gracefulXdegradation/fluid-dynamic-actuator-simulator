@@ -1,0 +1,22 @@
+version: '3'
+services:
+  simulator:
+    build:
+      context: ./.devcontainer/simulator
+      dockerfile: Dockerfile
+    volumes:
+      - .:/workspace:cached
+      - shared-data:/workspace/simulator/output
+    command: sleep infinity
+    links:
+      - web-app
+
+  web-app:
+    image: mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm
+    volumes:
+      - .:/workspace:cached
+      - shared-data:/data/fds
+    command: sleep infinity
+
+volumes:
+  shared-data:

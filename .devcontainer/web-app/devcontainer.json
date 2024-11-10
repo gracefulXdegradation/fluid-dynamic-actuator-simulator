@@ -1,0 +1,14 @@
+{
+	"name": "WebApp Container",
+	"dockerComposeFile": ["../../docker-compose.yml"],
+	"service": "web-app",
+	"shutdownAction": "none",
+	"workspaceFolder": "/workspace/web-app",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"esbenp.prettier-vscode"
+			]
+		}
+	}
+}

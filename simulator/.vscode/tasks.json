@@ -46,21 +46,11 @@
             "problemMatcher": [],
             "detail": "Clean the build output in the 'build' directory."
         },
-        // {
-        //     "label": "Clean Build",
-        //     "type": "shell",
-        //     "command": "rm",
-        //     "args": [
-        //         "-rf",
-        //         "./build",
-        //     ],
-        //     "problemMatcher": [],
-        //     "detail": "Remove the build directory"
-        // },
         {
             "label": "Run Executable",
             "type": "shell",
-            "command": "./build/bin/flight_dynamics_simulator",
+            // TODO: fix user permissions in the container and remove sudo
+            "command": "sudo ./build/bin/fds",
             "group": {
                 "kind": "test",
                 "isDefault": true
@@ -68,6 +58,14 @@
             "dependsOn": "CMake: Build",
             "problemMatcher": [],
             "detail": "Run the built executable."
+        },
+        {
+            "label": "Clean output",
+            "type": "shell",
+            // TODO: fix user permissions in the container and remove sudo
+            "command": "sudo rm -rf output/*.csv",
+            "problemMatcher": [],
+            "detail": "Cleans up .csv files in the output directory."
         }
     ]
 }

@@ -1,0 +1,7 @@
+{
+	"name": "Simulator Container",
+	"dockerComposeFile": ["../../docker-compose.yml"],
+	"service": "simulator",
+	"shutdownAction": "none",
+	"workspaceFolder": "/workspace/simulator"
+}

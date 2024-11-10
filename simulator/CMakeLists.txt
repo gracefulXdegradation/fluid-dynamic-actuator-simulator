@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 # Project name and version
-project(flight_dynamics_simulator VERSION 1.0)
+project(fds VERSION 1.0)
 
 # Set the C++ standard
 set(CMAKE_CXX_STANDARD 23)
