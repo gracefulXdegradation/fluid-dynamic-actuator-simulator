@@ -21,6 +21,7 @@ namespace OrbitalMechanics
   // Calculate eccentric anomalies for every timestamp (in seconds) based on a single mean anomaly, mean motion, eccentricity, and epoch
   std::vector<double> eccentricAnomaly(const std::vector<std::chrono::system_clock::time_point> &timestamps, double M, double mean_motion, double ecc, std::chrono::system_clock::time_point epoch);
 
+  std::vector<double> trueAnomaly(const std::vector<double> &E, double e);
 }
 
 #endif

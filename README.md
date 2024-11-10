@@ -97,4 +97,4 @@ Licensed under the MIT License. See LICENSE in the project root for license info
 - Improvement: package manager, e.g. **conan**.
 - Improvement: strong types or unit libraries in the OrbitalMechanics namespace (**kilometers** and **radians** instead of **double**). Possible solutions: type-safe wrappers using **struct**, type aliases with **std::chrono::duration**, unit libraries like **MPark.Units** or **Boost.Units**.
 - Improvement: consider [OTL](https://github.com/Jmbryan/OTL) for orbital mechanics.
-
+- Improvement: refactor TLE into Orbit

@@ -20,6 +20,9 @@ public:
   double getEccentricity() const { return eccentricity; }
   double getInclination() const { return inclination; }
   double getArgumentOfPerigee() const { return argumentOfPerigee; }
+  double getSemiMajorAxis() const { return semiMajorAxis; }
+
+  static const double GM; // gravitational parameter
 
 private:
   // Line 1 fields
@@ -46,6 +49,8 @@ private:
   double meanMotion;
   int revolutionNumber;
   int checksum2;
+
+  double semiMajorAxis; // km
 
   void parseTLE(const std::string &line1, const std::string &line2);
 };

@@ -28,6 +28,19 @@ int main()
         TLE tle = TLE::fromFile(string(BUILD_OUTPUT_PATH) + "/tle.txt");
 
         auto eccentricAnomalies = OrbitalMechanics::eccentricAnomaly(date_times, tle.getMeanAnomaly(), tle.getMeanMotion(), tle.getEccentricity(), tle.getEpoch());
+        auto trueAnomalies = OrbitalMechanics::trueAnomaly(eccentricAnomalies, tle.getEccentricity());
+
+        std::vector<std::array<double, 3>> radius_vectors;
+        std::vector<std::array<double, 3>> velocity_vectors;
+        radius_vectors.reserve(date_times.size());
+        velocity_vectors.reserve(date_times.size());
+
+        for (const auto &trueAnomaly : trueAnomalies)
+        {
+            auto [i_r, i_v] = OrbitalMechanics::keplerian2ijk(tle.getSemiMajorAxis(), tle.getEccentricity(), tle.getInclination(), tle.getArgumentOfPerigee(), trueAnomaly, tle.getRightAscension());
+            radius_vectors.push_back(i_r);
+            velocity_vectors.push_back(i_v);
+        }
 
         MatrixXd A(2, 3);
         A << 1, 2, 3,

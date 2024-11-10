@@ -78,4 +78,20 @@ namespace OrbitalMechanics
     return eccentricAnomalies;
   }
 
+  std::vector<double> trueAnomaly(const std::vector<double> &E, double e)
+  {
+    std::vector<double> nu;
+    nu.reserve(E.size());
+
+    for (const auto &eccentric_anomaly : E)
+    {
+      double sin_part = std::sqrt(1 - e * e) * std::sin(eccentric_anomaly);
+      double cos_part = std::cos(eccentric_anomaly) - e;
+      double true_anom = std::atan2(sin_part, cos_part);
+
+      nu.push_back(MathHelpers::wrapTo2Pi(true_anom));
+    }
+
+    return nu;
+  }
 }

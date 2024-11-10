@@ -14,6 +14,8 @@ TLE::TLE(const std::string &line1, const std::string &line2)
   parseTLE(line1, line2);
 }
 
+const double TLE::GM = 3.986004418e14;
+
 int getFullYear(int yearTwoDigits, int cutoff = 57)
 {
   if (yearTwoDigits >= 0 && yearTwoDigits <= 99)
@@ -60,6 +62,8 @@ void TLE::parseTLE(const std::string &line1, const std::string &line2)
   meanMotion = 2 * M_PI * stod(line2.substr(52, 11)) / DateTime::SECONDS_IN_A_DAY.count();
   revolutionNumber = stoi(line2.substr(63, 5));
   checksum2 = stoi(line2.substr(68, 1));
+
+  semiMajorAxis = std::cbrt(GM / meanMotion / meanMotion) / 1000.0; // km
 }
 
 TLE TLE::fromFile(const std::string &filePath)
