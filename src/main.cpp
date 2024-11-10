@@ -27,9 +27,7 @@ int main()
     {
         TLE tle = TLE::fromFile(string(BUILD_OUTPUT_PATH) + "/tle.txt");
 
-        cout << "Epoch: " << DateTime::formatTime(tle.getEpoch()) << endl;
-
-        auto eccentricAnomalies = OrbitalMechanics::eccentricAnomaly(date_times, tle.getMeanAnomaly(), tle.getMeanMotion(), tle.getEccentricity());
+        auto eccentricAnomalies = OrbitalMechanics::eccentricAnomaly(date_times, tle.getMeanAnomaly(), tle.getMeanMotion(), tle.getEccentricity(), tle.getEpoch());
 
         MatrixXd A(2, 3);
         A << 1, 2, 3,

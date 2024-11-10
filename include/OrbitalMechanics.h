@@ -18,8 +18,8 @@ namespace OrbitalMechanics
       double raan // Right Ascension of Ascending Node (rad)
   );
 
-  // Calculate eccentric anomalies for every timestamp (in seconds) based on a single mean anomaly, mean motion, and eccentricity
-  std::vector<double> eccentricAnomaly(const std::vector<std::chrono::system_clock::time_point> &timestamps, double M, double mean_motion, double ecc);
+  // Calculate eccentric anomalies for every timestamp (in seconds) based on a single mean anomaly, mean motion, eccentricity, and epoch
+  std::vector<double> eccentricAnomaly(const std::vector<std::chrono::system_clock::time_point> &timestamps, double M, double mean_motion, double ecc, std::chrono::system_clock::time_point epoch);
 
 }
 

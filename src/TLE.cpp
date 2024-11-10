@@ -28,7 +28,7 @@ int getFullYear(int yearTwoDigits, int cutoff = 57)
 
 system_clock::time_point dayOfYearToDateTime(double dayOfYear, int year)
 {
-  std::tm startOfTheYear = {0, 0, 0, 1, 0, year - 1900};
+  std::tm startOfTheYear = {0, 0, 0, 0, 0, year - 1900};
   system_clock::time_point yearStart = system_clock::from_time_t(std::mktime(&startOfTheYear));
   duration<int> secondsFromYearStartTilTheMoment(static_cast<int>(dayOfYear * DateTime::SECONDS_IN_A_DAY.count()));
   return yearStart + secondsFromYearStartTilTheMoment;

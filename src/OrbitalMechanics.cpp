@@ -49,7 +49,7 @@ namespace OrbitalMechanics
     return {r, v};
   }
 
-  std::vector<double> eccentricAnomaly(const std::vector<std::chrono::system_clock::time_point> &timestamps, double M, double mean_motion, double ecc)
+  std::vector<double> eccentricAnomaly(const std::vector<std::chrono::system_clock::time_point> &timestamps, double M, double mean_motion, double ecc, std::chrono::system_clock::time_point epoch)
   {
     const double tolerance = 1e-9;
     std::vector<double> eccentricAnomalies;
@@ -57,9 +57,7 @@ namespace OrbitalMechanics
 
     for (const auto &timestamp : timestamps)
     {
-      // Calculate the elapsed time in seconds since the start timestamp
-      auto elapsed_duration = timestamp.time_since_epoch();
-      double elapsed_seconds = std::chrono::duration_cast<std::chrono::seconds>(elapsed_duration).count();
+      double elapsed_seconds = std::chrono::duration_cast<std::chrono::milliseconds>(timestamp - epoch).count() / 1000.0;
 
       // Calculate the mean anomaly for the current timestamp
       double current_mean_anomaly = MathHelpers::wrapTo2Pi(M + elapsed_seconds * mean_motion);

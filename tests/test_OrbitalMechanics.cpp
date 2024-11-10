@@ -53,34 +53,60 @@ bool test_keplerian2ijk()
 
 bool test_eccentricAnomaly()
 {
+  double tolerance = 1e-3;
+
   // Define test parameters
-  double initial_mean_anomaly = 1.5638; // Example mean anomaly (radians)
-  double eccentricity = 0.0013;         // Example eccentricity
-  double mean_motion = 0.0011;          // Mean motion (radians per second)
+  double initial_mean_anomaly = 1.5638411897256992; // Example mean anomaly (radians)
+  double eccentricity = 0.0012642;                  // Example eccentricity
+  double mean_motion = 0.0011129785881891408;       // Mean motion (radians per second)
+  auto epoch = DateTime::parseDateTime("2023-06-26 08:46:57");
+
+  auto startTime = DateTime::parseDateTime("2023-07-04 14:25:00");
+  int timeStep = 500;
+
+  auto dur = std::chrono::duration_cast<std::chrono::seconds>(startTime - epoch).count();
 
   std::vector<std::chrono::system_clock::time_point> timestamps = {
-      DateTime::parseDateTime("2023-07-04 14:25:00")
-      // std::chrono::system_clock::time_point(1688480700000000000),
-      // std::chrono::system_clock::time_point(1688480700500000000),
-      // std::chrono::system_clock::time_point(1688480701000000000),
-      // std::chrono::system_clock::time_point(1688480701500000000),
-      // std::chrono::system_clock::time_point(1688480702000000000),
-  };
+      startTime,
+      startTime + std::chrono::milliseconds(timeStep),
+      startTime + std::chrono::milliseconds(timeStep * 2),
+      startTime + std::chrono::milliseconds(timeStep * 3),
+      startTime + std::chrono::milliseconds(timeStep * 4)};
+
+  std::vector<double> expected = {
+      1.748486401596818,
+      1.749042766375569,
+      1.749599130769283,
+      1.750155494778001,
+      1.750711858401648};
 
   // Calculate the eccentric anomalies
-  auto eccentricAnomalies = OrbitalMechanics::eccentricAnomaly(timestamps, initial_mean_anomaly, mean_motion, eccentricity);
+  auto eccentricAnomalies = OrbitalMechanics::eccentricAnomaly(timestamps, initial_mean_anomaly, mean_motion, eccentricity, epoch);
 
+  bool isFail = false;
   // Check results
   for (size_t i = 0; i < eccentricAnomalies.size(); ++i)
   {
-    std::cout << "Eccentric Anomaly at t[" << i << "]: " << eccentricAnomalies[i] << " radians\n";
+    if (std::fabs(eccentricAnomalies[i] - expected[i]) > tolerance)
+    {
+      isFail = true;
+    }
   }
 
-  // Optional: Add assertions with known expected values for exact tests
-  // e.g., assert(std::abs(eccentricAnomalies[0] - expected_value) < 1e-9);
+  if (isFail)
+  {
+    std::cout << "Test failed: Computed values do not match expected values.\n";
+    for (size_t i = 0; i < eccentricAnomalies.size(); ++i)
+    {
+      std::cout << "Eccentric Anomaly at t[" << i << "]: " << eccentricAnomalies[i] << " rad. Expected: " << expected[i] << "\n";
+    }
+  }
+  else
+  {
+    std::cout << "Test passed: Computed values match expected values.\n";
+  }
 
-  std::cout << "Eccentric anomaly test completed.\n";
-  return 1;
+  return isFail;
 }
 
 int main()
