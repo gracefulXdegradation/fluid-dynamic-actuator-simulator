@@ -61,8 +61,7 @@ const SimulationPage = () => {
 
   const formatDataForChart = (vectorData: { name: string; data: number[] }[]) => {
     return vectorData[0].data.map((_, index) => {
-      // const obj: any = { timestamp: t[index] };
-      const obj = { timestamp: new Date().getTime() };
+      const obj = { timestamp: new Date(t[index] * 1000) };
       vectorData.forEach((vector) => {
         obj[vector.name] = vector.data[index];
       });

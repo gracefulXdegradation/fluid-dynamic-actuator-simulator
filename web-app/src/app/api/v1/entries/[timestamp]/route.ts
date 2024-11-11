@@ -7,12 +7,17 @@ const parseCSV = async (filePath: string) => {
       const fileContent = await fs.readFile(filePath, 'utf-8');
 
       // Parse CSV data into JSON
-      const rows: number[][] = [];
+      let rows: number[][];
       parse(fileContent, { cast: true }, (err, records: number[][]) => {
         if (err) {
           throw err;
         }
-        rows.push(...records);
+        
+        if (records[0] && records[0].length === 1) {
+          rows = records.map(r => r[0]);
+        } else {
+          rows = records;
+        }
       });
   
       // Wait for parsing to complete
@@ -22,16 +27,14 @@ const parseCSV = async (filePath: string) => {
 }
 
 export async function GET(request: Request, { params }: { params: Promise<{ timestamp: string; }> }) {
-  // const searchParams = request.nextUrl.searchParams
-  // const ts = searchParams.get('timestamp')
-  // const filename = searchParams.get('filename')
   const {timestamp} = await params;
 
   try {
     const radiusVectors = await parseCSV(path.join('/data/fds', timestamp, `i_r.csv`));
     const velocityVectors = await parseCSV(path.join('/data/fds', timestamp, `i_v.csv`));
+    const t = await parseCSV(path.join('/data/fds', timestamp, `t.csv`));
 
-    return Response.json({r: radiusVectors, v: velocityVectors});
+    return Response.json({r: radiusVectors, v: velocityVectors, t});
   } catch (error) {
     console.error('Error reading file:', error);
     return new Response(`Path does not exist: ${timestamp}/${filename}`, {
