@@ -1,12 +1,13 @@
 #include <cmath>
 #include "OrbitalMechanics.h"
 #include "MathHelpers.hpp"
+#include <Eigen/Dense>
 
 namespace OrbitalMechanics
 {
   const double mu_earth = 3.986e5; // Earth's gravitational constant (Km^3/s^2)
 
-  std::pair<std::array<double, 3>, std::array<double, 3>> keplerian2ijk(
+  std::pair<Eigen::VectorXd, Eigen::VectorXd> keplerian2ijk(
       double sma, // Semi-major axis (Km)
       double ecc, // Eccentricity
       double inc, // Inclination (rad)
@@ -43,8 +44,13 @@ namespace OrbitalMechanics
     double Vz = (sin(w) * sin(inc)) * Vx_ + (cos(w) * sin(inc)) * Vy_;
 
     // Return the results as a pair of arrays
-    std::array<double, 3> r = {X, Y, Z};
-    std::array<double, 3> v = {Vx, Vy, Vz};
+    // std::array<double, 3> r = {X, Y, Z};
+    // std::array<double, 3> v = {Vx, Vy, Vz};
+
+    Eigen::VectorXd r(3);
+    r << X, Y, Z;
+    Eigen::VectorXd v(3);
+    v << Vx, Vy, Vz;
 
     return {r, v};
   }

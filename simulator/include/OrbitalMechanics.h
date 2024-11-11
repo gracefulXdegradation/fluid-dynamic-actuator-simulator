@@ -4,12 +4,13 @@
 #include <array>
 #include <vector>
 #include <chrono>
+#include <Eigen/Dense>
 
 namespace OrbitalMechanics
 {
 
   // Function to convert Keplerian elements to Cartesian coordinates in geocentric-equatorial reference
-  std::pair<std::array<double, 3>, std::array<double, 3>> keplerian2ijk(
+  std::pair<Eigen::VectorXd, Eigen::VectorXd> keplerian2ijk(
       double sma, // Semi-major axis (Km)
       double ecc, // Eccentricity
       double inc, // Inclination (rad)

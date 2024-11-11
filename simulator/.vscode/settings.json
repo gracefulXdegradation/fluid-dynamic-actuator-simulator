@@ -64,6 +64,7 @@
     "forward_list": "cpp",
     "optional": "cpp",
     "ranges": "cpp",
-    "span": "cpp"
+    "span": "cpp",
+    "core": "cpp"
   }
 }

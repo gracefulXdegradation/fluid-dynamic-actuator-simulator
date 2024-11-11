@@ -32,7 +32,7 @@ namespace DB
     return transposed;
   }
 
-  void writematrix(const std::vector<std::vector<double>> &matrix, const std::string &directory, const std::string &filename)
+  void writematrix(const Eigen::MatrixXd &matrix, const std::string &directory, const std::string &filename)
   {
     // Ensure the directory exists, create it if it does not
     if (!fs::exists(directory))
@@ -51,18 +51,20 @@ namespace DB
       return;
     }
 
-    // Write the matrix data to the file in CSV format
-    for (const auto &row : matrix)
+    for (int i = 0; i < matrix.rows(); ++i)
     {
-      for (std::size_t i = 0; i < row.size(); ++i)
+      // Iterate over columns
+      for (int j = 0; j < matrix.cols(); ++j)
       {
-        file << row[i];
-        if (i < row.size() - 1)
+        file << matrix(i, j);
+        // Add a comma if not the last column
+        if (j < matrix.cols() - 1)
         {
-          file << ","; // Separate columns with commas
+          file << ",";
         }
       }
-      file << "\n"; // Newline after each row
+      // Newline at the end of each row
+      file << "\n";
     }
 
     // Check if the file write was successful

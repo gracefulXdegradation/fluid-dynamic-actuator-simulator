@@ -31,23 +31,23 @@ int main()
         auto eccentricAnomalies = OrbitalMechanics::eccentricAnomaly(date_times, tle.getMeanAnomaly(), tle.getMeanMotion(), tle.getEccentricity(), tle.getEpoch());
         auto trueAnomalies = OrbitalMechanics::trueAnomaly(eccentricAnomalies, tle.getEccentricity());
 
-        std::vector<std::array<double, 3>> radius_vectors;
-        std::vector<std::array<double, 3>> velocity_vectors;
-        radius_vectors.reserve(date_times.size());
-        velocity_vectors.reserve(date_times.size());
+        Eigen::MatrixXd m_i_r(3, date_times.size());
+        m_i_r.setZero();
+        Eigen::MatrixXd m_i_v(3, date_times.size());
+        m_i_v.setZero();
 
-        for (const auto &trueAnomaly : trueAnomalies)
+        for (int i = 0; i < trueAnomalies.size(); i++)
         {
-            auto [i_r, i_v] = OrbitalMechanics::keplerian2ijk(tle.getSemiMajorAxis(), tle.getEccentricity(), tle.getInclination(), tle.getArgumentOfPerigee(), trueAnomaly, tle.getRightAscension());
-            radius_vectors.push_back(i_r);
-            velocity_vectors.push_back(i_v);
+            auto &ta = trueAnomalies[i];
+            auto [i_r, i_v] = OrbitalMechanics::keplerian2ijk(tle.getSemiMajorAxis(), tle.getEccentricity(), tle.getInclination(), tle.getArgumentOfPerigee(), ta, tle.getRightAscension());
+            m_i_r.col(i) = i_r;
+            m_i_v.col(i) = i_v;
         }
 
-        auto ts = DateTime::getCurrentTimestamp();
-
         // Save to file
-        DB::writematrix(DB::transpose(radius_vectors), "./output/" + ts, "i_r.csv");
-        DB::writematrix(DB::transpose(velocity_vectors), "./output/" + ts, "i_v.csv");
+        auto ts = DateTime::getCurrentTimestamp();
+        DB::writematrix(m_i_r, "./output/" + ts, "i_r.csv");
+        DB::writematrix(m_i_v, "./output/" + ts, "i_v.csv");
         DB::serializeTimePointsToCSV(date_times, "./output/" + ts, "t.csv");
 
         std::cout << "Data saved to output.txt" << std::endl;
