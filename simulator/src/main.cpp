@@ -46,8 +46,9 @@ int main()
         auto ts = DateTime::getCurrentTimestamp();
 
         // Save to file
-        DB::writematrix(radius_vectors, "./output/" + ts, "i_r.csv");
-        DB::writematrix(velocity_vectors, "./output/" + ts, "i_v.csv");
+        DB::writematrix(DB::transpose(radius_vectors), "./output/" + ts, "i_r.csv");
+        DB::writematrix(DB::transpose(velocity_vectors), "./output/" + ts, "i_v.csv");
+        DB::serializeTimePointsToCSV(date_times, "./output/" + ts, "t.csv");
 
         std::cout << "Data saved to output.txt" << std::endl;
 
