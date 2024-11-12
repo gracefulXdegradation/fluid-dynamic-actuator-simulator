@@ -2,6 +2,7 @@
 #include <string>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
+#include <tuple>
 #include "TLE.h"
 #include "config.hpp"
 #include "dateTime.hpp"
@@ -51,7 +52,7 @@ std::pair<std::vector<Quaterniond>, Matrix3Xd> nadir_frame(const Matrix3Xd &posi
     return {attitude, angular_rate};
 }
 
-void target_pointing_frame(const MatrixXd &r_inert, const MatrixXd &v_inert, const Vector3d &gs_r, const std::vector<std::chrono::_V2::system_clock::time_point> &date_times)
+std::tuple<std::vector<Quaterniond>, Matrix3Xd, Matrix3Xd, Matrix3Xd> target_pointing_frame(const MatrixXd &r_inert, const MatrixXd &v_inert, const Vector3d &gs_r, const std::vector<std::chrono::_V2::system_clock::time_point> &date_times)
 {
     Vector3d gs_r_ecef = Conversions::lla2ecef(gs_r); // in meters
     Vector3d gs_v_ecef(3);
@@ -80,46 +81,29 @@ void target_pointing_frame(const MatrixXd &r_inert, const MatrixXd &v_inert, con
         inertial_target_rate.col(i) = dist_inert_vec.cross(delta_v_inert_vec) / dist_inert_vec.dot(dist_inert_vec);
     }
 
-    Matrix3Xd ixt(3, date_times.size());
-    Matrix3Xd iyt(3, date_times.size());
-    Matrix3Xd izt(3, date_times.size());
-
     Matrix3Xd target_angular_rate(3, date_times.size());
-
     std::vector<Quaterniond> target_attitude;
 
-    Vector3d vec = distance_inert.col(0);
-    Vector3d ang_mom_norm = MathHelpers::normalizeVector(orbit_angular_momentum.col(0));
-    izt.col(0) = MathHelpers::normalizeVector(vec);
-    Vector3d iztph = izt.col(0).dot(ang_mom_norm) * ang_mom_norm;
-    Vector3d iztnh = izt.col(0) - iztph;
-    ixt.col(0) = MathHelpers::normalizeVector(iztnh.cross(orbit_angular_momentum.col(0)));
-    iyt.col(0) = MathHelpers::normalizeVector(izt.col(0).cross(ixt.col(0)));
+    for (int i = 0; i < date_times.size(); i++)
+    {
+        Vector3d vec = distance_inert.col(i);
+        Vector3d ang_mom_norm = MathHelpers::normalizeVector(orbit_angular_momentum.col(i));
+        Vector3d izt = MathHelpers::normalizeVector(vec);
+        Vector3d iztph = izt.dot(ang_mom_norm) * ang_mom_norm;
+        Vector3d iztnh = izt - iztph;
+        Vector3d ixt = MathHelpers::normalizeVector(iztnh.cross(orbit_angular_momentum.col(i)));
+        Vector3d iyt = MathHelpers::normalizeVector(izt.cross(ixt));
 
-    Eigen::Matrix3d mat;
-    mat.col(0) = ixt.col(0);
-    mat.col(1) = iyt.col(0);
-    mat.col(2) = izt.col(0);
-    Quaterniond q(mat);
-    target_attitude.push_back(q);
-    target_angular_rate.col(0) = q.conjugate() * inertial_target_rate.col(0); // rotate frame
+        Eigen::Matrix3d mat;
+        mat.col(0) = ixt;
+        mat.col(1) = iyt;
+        mat.col(2) = izt;
+        Quaterniond q(mat);
+        target_attitude.push_back(q);
+        target_angular_rate.col(i) = q.conjugate() * inertial_target_rate.col(i); // rotate frame
+    }
 
-    std::cout << "distance_inert:" << std::endl;
-    std::cout << vec << std::endl;
-    std::cout << "distance_inert / distance_inert.norm():" << std::endl;
-    std::cout << MathHelpers::normalizeVector(vec) << std::endl;
-    std::cout << "ixt:" << std::endl;
-    std::cout << ixt.col(0) << std::endl;
-    std::cout << "iyt:" << std::endl;
-    std::cout << iyt.col(0) << std::endl;
-    std::cout << "izt:" << std::endl;
-    std::cout << izt.col(0) << std::endl;
-    std::cout << "mat:" << std::endl;
-    std::cout << mat << std::endl;
-    std::cout << "q:" << std::endl;
-    std::cout << q << std::endl;
-    std::cout << "target_angular_rate:" << std::endl;
-    std::cout << target_angular_rate.col(0) << std::endl;
+    return std::make_tuple(target_attitude, target_angular_rate, gs_r_inert, gs_v_inert);
 }
 
 int main()
@@ -156,7 +140,16 @@ int main()
         }
 
         auto [q_in, n_omega_n] = nadir_frame(m_i_r, m_i_v);
-        target_pointing_frame(m_i_r, m_i_v, config.getGroundStationPosition(), date_times);
+        auto [q_it, t_omega_t, i_r_gs, i_v_gs] = target_pointing_frame(m_i_r, m_i_v, config.getGroundStationPosition(), date_times);
+
+        std::cout << "q_it" << std::endl;
+        std::cout << q_it[0] << std::endl;
+        std::cout << "t_omega_t" << std::endl;
+        std::cout << t_omega_t.col(0) << std::endl;
+        std::cout << "i_r_gs" << std::endl;
+        std::cout << i_r_gs.col(0) << std::endl;
+        std::cout << "i_v_gs" << std::endl;
+        std::cout << i_v_gs.col(0) << std::endl;
 
         // Save to file
         auto ts = DateTime::getCurrentTimestamp();
