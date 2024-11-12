@@ -43,10 +43,6 @@ namespace OrbitalMechanics
                 (-sin(raan) * sin(w) + cos(raan) * cos(w) * cos(inc)) * Vy_;
     double Vz = (sin(w) * sin(inc)) * Vx_ + (cos(w) * sin(inc)) * Vy_;
 
-    // Return the results as a pair of arrays
-    // std::array<double, 3> r = {X, Y, Z};
-    // std::array<double, 3> v = {Vx, Vy, Vz};
-
     Eigen::Vector3d r(3);
     r << X, Y, Z;
     Eigen::Vector3d v(3);
