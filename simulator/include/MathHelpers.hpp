@@ -11,6 +11,11 @@ using namespace std;
 
 namespace MathHelpers
 {
+  inline Vector3d normalizeVector(const Vector3d &vec)
+  {
+    return vec / vec.norm();
+  }
+
   inline double wrapTo2Pi(double angle)
   {
     return fmod(angle + 2 * M_PI, 2 * M_PI);

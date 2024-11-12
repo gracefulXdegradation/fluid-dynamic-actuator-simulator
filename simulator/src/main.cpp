@@ -80,12 +80,41 @@ void target_pointing_frame(const MatrixXd &r_inert, const MatrixXd &v_inert, con
         inertial_target_rate.col(i) = dist_inert_vec.cross(delta_v_inert_vec) / dist_inert_vec.dot(dist_inert_vec);
     }
 
+    Matrix3Xd ixt(3, date_times.size());
+    Matrix3Xd iyt(3, date_times.size());
+    Matrix3Xd izt(3, date_times.size());
+
+    std::vector<Quaterniond> target_attitude;
+
+    Vector3d vec = distance_inert.col(0);
+    Vector3d ang_mom_norm = MathHelpers::normalizeVector(orbit_angular_momentum.col(0));
+    izt.col(0) = MathHelpers::normalizeVector(vec);
+    Vector3d iztph = izt.col(0).dot(ang_mom_norm) * ang_mom_norm;
+    Vector3d iztnh = izt.col(0) - iztph;
+    ixt.col(0) = MathHelpers::normalizeVector(iztnh.cross(orbit_angular_momentum.col(0)));
+    iyt.col(0) = MathHelpers::normalizeVector(izt.col(0).cross(ixt.col(0)));
+
+    Eigen::Matrix3d mat;
+    mat.col(0) = ixt.col(0);
+    mat.col(1) = iyt.col(0);
+    mat.col(2) = izt.col(0);
+    Quaterniond q(mat);
+    target_attitude.push_back(q);
+
     std::cout << "distance_inert:" << std::endl;
-    std::cout << distance_inert.col(0) << std::endl;
-    std::cout << "delta_v_inert:" << std::endl;
-    std::cout << delta_v_inert.col(0) << std::endl;
-    std::cout << "inertial_target_rate:" << std::endl;
-    std::cout << inertial_target_rate.col(0) << std::endl;
+    std::cout << vec << std::endl;
+    std::cout << "distance_inert / distance_inert.norm():" << std::endl;
+    std::cout << MathHelpers::normalizeVector(vec) << std::endl;
+    std::cout << "ixt:" << std::endl;
+    std::cout << ixt.col(0) << std::endl;
+    std::cout << "iyt:" << std::endl;
+    std::cout << iyt.col(0) << std::endl;
+    std::cout << "izt:" << std::endl;
+    std::cout << izt.col(0) << std::endl;
+    std::cout << "mat:" << std::endl;
+    std::cout << mat << std::endl;
+    std::cout << "q:" << std::endl;
+    std::cout << q << std::endl;
 }
 
 int main()
