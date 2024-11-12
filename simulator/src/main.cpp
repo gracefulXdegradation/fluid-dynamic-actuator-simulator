@@ -91,17 +91,10 @@ std::pair<std::vector<Quaterniond>, MatrixXd> nadir_frame(const MatrixXd &positi
 
     std::vector<Matrix3d> attitude_matrix_pages = reshapeAndPagetranspose(x, y, z);
 
-    // attitude_matrix(3,2,1) => attitude_matrix_pages[0](2, 1)
-    std::cout << attitude_matrix_pages[0](2, 1) << std::endl;
-    // attitude_matrix(:,:,1) => attitude_matrix_pages[0]
-    std::cout << attitude_matrix_pages[0] << std::endl;
-
     // attitude = smooth_quaternion(quaternion(attitude_matrix, 'rotmat', 'frame'));
     // ignoring smooth_quaternion
-
     std::vector<Quaterniond> attitude;
     attitude.reserve(count);
-
     for (int i = 0; i < count; ++i)
     {
         Matrix3d rot_matrix = attitude_matrix_pages[i];
@@ -113,35 +106,11 @@ std::pair<std::vector<Quaterniond>, MatrixXd> nadir_frame(const MatrixXd &positi
 
     // angular_rate = rotateframe(attitude, (angular_momentum ./ vecnorm(position).^2)')';
     MatrixXd momentum_normalized = angular_momentum.array().rowwise() / position.colwise().norm().array().square().matrix().array();
-
     MatrixXd angular_rate(angular_momentum.rows(), angular_momentum.cols());
-
     for (int i = 0; i < count; ++i)
     {
         angular_rate.col(i) = attitude[i].conjugate() * momentum_normalized.col(i);
     }
-
-    std::cout << "===================" << std::endl;
-    std::cout << "attitude" << std::endl;
-    std::cout << attitude[0].w() << std::endl;
-    std::cout << attitude[0].x() << std::endl;
-    std::cout << attitude[0].y() << std::endl;
-    std::cout << attitude[0].z() << std::endl;
-
-    std::cout << "===================" << std::endl;
-    std::cout << "momentum_normalized" << std::endl;
-    std::cout << momentum_normalized.rows() << std::endl;
-    std::cout << momentum_normalized.cols() << std::endl;
-    std::cout << momentum_normalized.col(0) << std::endl;
-
-    // auto ang_rate = attitude[0].conjugate() * momentum_normalized.col(0);
-    // angular_rate.col(0) = ang_rate;
-
-    std::cout << "===================" << std::endl;
-    std::cout << "angular rate" << std::endl;
-    std::cout << angular_rate.rows() << std::endl;
-    std::cout << angular_rate.cols() << std::endl;
-    std::cout << angular_rate.col(0) << std::endl;
 
     return {attitude, angular_rate};
 }
