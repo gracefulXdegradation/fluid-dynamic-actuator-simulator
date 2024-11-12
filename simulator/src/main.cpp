@@ -84,6 +84,8 @@ void target_pointing_frame(const MatrixXd &r_inert, const MatrixXd &v_inert, con
     Matrix3Xd iyt(3, date_times.size());
     Matrix3Xd izt(3, date_times.size());
 
+    Matrix3Xd target_angular_rate(3, date_times.size());
+
     std::vector<Quaterniond> target_attitude;
 
     Vector3d vec = distance_inert.col(0);
@@ -100,6 +102,7 @@ void target_pointing_frame(const MatrixXd &r_inert, const MatrixXd &v_inert, con
     mat.col(2) = izt.col(0);
     Quaterniond q(mat);
     target_attitude.push_back(q);
+    target_angular_rate.col(0) = q.conjugate() * inertial_target_rate.col(0); // rotate frame
 
     std::cout << "distance_inert:" << std::endl;
     std::cout << vec << std::endl;
@@ -115,6 +118,8 @@ void target_pointing_frame(const MatrixXd &r_inert, const MatrixXd &v_inert, con
     std::cout << mat << std::endl;
     std::cout << "q:" << std::endl;
     std::cout << q << std::endl;
+    std::cout << "target_angular_rate:" << std::endl;
+    std::cout << target_angular_rate.col(0) << std::endl;
 }
 
 int main()
