@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <Eigen/Dense>
+#include <Eigen/Geometry>
 #include "TLE.h"
 #include "config.hpp"
 #include "dateTime.hpp"
@@ -10,7 +11,7 @@
 using namespace Eigen;
 using namespace std;
 
-Eigen::MatrixXd cross(const Eigen::MatrixXd &a, const Eigen::MatrixXd &b)
+MatrixXd cross(const MatrixXd &a, const MatrixXd &b)
 {
     if (a.rows() != 3 || b.rows() != 3 || a.cols() != b.cols())
     {
@@ -19,14 +20,14 @@ Eigen::MatrixXd cross(const Eigen::MatrixXd &a, const Eigen::MatrixXd &b)
     }
 
     // Initialize the result matrix with the same number of rows and columns
-    Eigen::MatrixXd x(3, a.cols());
+    MatrixXd x(3, a.cols());
 
     // Loop over each column and compute the cross product
     for (int i = 0; i < a.cols(); ++i)
     {
         // Extract the 3D vectors from the matrices (column i)
-        Eigen::Vector3d posVec = a.col(i);
-        Eigen::Vector3d velVec = b.col(i);
+        Vector3d posVec = a.col(i);
+        Vector3d velVec = b.col(i);
 
         // Compute the cross product and store it in the result matrix
         x.col(i) = posVec.cross(velVec);
@@ -35,17 +36,114 @@ Eigen::MatrixXd cross(const Eigen::MatrixXd &a, const Eigen::MatrixXd &b)
     return x;
 }
 
-void nadir_frame(const Eigen::MatrixXd &position, const Eigen::MatrixXd &velocity)
+std::vector<Matrix3d> reshapeAndPagetranspose(const MatrixXd &x, const MatrixXd &y, const MatrixXd &z)
 {
-    Eigen::MatrixXd angular_momentum = cross(position, velocity);
+    int cols = x.cols();
+    int rows = x.rows();
+
+    std::vector<MatrixXd> reshaped_x, reshaped_y, reshaped_z;
+
+    for (int i = 0; i < cols; ++i)
+    {
+        MatrixXd slice_x(rows, 1);
+        MatrixXd slice_y(rows, 1);
+        MatrixXd slice_z(rows, 1);
+
+        for (int j = 0; j < rows; ++j)
+        {
+            slice_x(j, 0) = x(j, i);
+            slice_y(j, 0) = y(j, i);
+            slice_z(j, 0) = z(j, i);
+        }
+
+        reshaped_x.push_back(slice_x);
+        reshaped_y.push_back(slice_y);
+        reshaped_z.push_back(slice_z);
+    }
+
+    std::vector<Matrix3d> attitude_matrix_pages;
+
+    for (int i = 0; i < cols; ++i)
+    {
+        // Combine slices along the third dimension (column)
+        MatrixXd attitude_matrix(rows, rows);
+        attitude_matrix.col(0) = reshaped_x[i];
+        attitude_matrix.col(1) = reshaped_y[i];
+        attitude_matrix.col(2) = reshaped_z[i];
+
+        attitude_matrix_pages.push_back(attitude_matrix.transpose()); // Page transpose
+    }
+
+    return attitude_matrix_pages;
+}
+
+std::pair<std::vector<Quaterniond>, MatrixXd> nadir_frame(const MatrixXd &position, const MatrixXd &velocity)
+{
+    int count = position.cols();
+
+    MatrixXd angular_momentum = cross(position, velocity);
 
     // z = -position ./ vecnorm(position);
-    Eigen::MatrixXd z = -(position.array().rowwise() / position.colwise().norm().array());
+    MatrixXd z = -(position.array().rowwise() / position.colwise().norm().array());
     // y = -angular_momentum ./ vecnorm(angular_momentum);
-    Eigen::MatrixXd y = -(angular_momentum.array().rowwise() / angular_momentum.colwise().norm().array());
-    Eigen::MatrixXd x = cross(y, z);
+    MatrixXd y = -(angular_momentum.array().rowwise() / angular_momentum.colwise().norm().array());
+    MatrixXd x = cross(y, z);
 
-    std::cout << x.col(0) << std::endl;
+    std::vector<Matrix3d> attitude_matrix_pages = reshapeAndPagetranspose(x, y, z);
+
+    // attitude_matrix(3,2,1) => attitude_matrix_pages[0](2, 1)
+    std::cout << attitude_matrix_pages[0](2, 1) << std::endl;
+    // attitude_matrix(:,:,1) => attitude_matrix_pages[0]
+    std::cout << attitude_matrix_pages[0] << std::endl;
+
+    // attitude = smooth_quaternion(quaternion(attitude_matrix, 'rotmat', 'frame'));
+    // ignoring smooth_quaternion
+
+    std::vector<Quaterniond> attitude;
+    attitude.reserve(count);
+
+    for (int i = 0; i < count; ++i)
+    {
+        Matrix3d rot_matrix = attitude_matrix_pages[i];
+
+        // transpose to counter a negative scalar part that gets produced otherwise
+        Quaterniond q(rot_matrix.transpose());
+        attitude.push_back(q);
+    }
+
+    // angular_rate = rotateframe(attitude, (angular_momentum ./ vecnorm(position).^2)')';
+    MatrixXd momentum_normalized = angular_momentum.array().rowwise() / position.colwise().norm().array().square().matrix().array();
+
+    MatrixXd angular_rate(angular_momentum.rows(), angular_momentum.cols());
+
+    for (int i = 0; i < count; ++i)
+    {
+        angular_rate.col(i) = attitude[i].conjugate() * momentum_normalized.col(i);
+    }
+
+    std::cout << "===================" << std::endl;
+    std::cout << "attitude" << std::endl;
+    std::cout << attitude[0].w() << std::endl;
+    std::cout << attitude[0].x() << std::endl;
+    std::cout << attitude[0].y() << std::endl;
+    std::cout << attitude[0].z() << std::endl;
+
+    std::cout << "===================" << std::endl;
+    std::cout << "momentum_normalized" << std::endl;
+    std::cout << momentum_normalized.rows() << std::endl;
+    std::cout << momentum_normalized.cols() << std::endl;
+    std::cout << momentum_normalized.col(0) << std::endl;
+
+    // auto ang_rate = attitude[0].conjugate() * momentum_normalized.col(0);
+    // angular_rate.col(0) = ang_rate;
+
+    std::cout << "===================" << std::endl;
+    std::cout << "angular rate" << std::endl;
+    std::cout << angular_rate.rows() << std::endl;
+    std::cout << angular_rate.cols() << std::endl;
+    std::cout << angular_rate.col(0) << std::endl;
+
+    return {attitude, angular_rate};
 }
 
 int main()
@@ -69,9 +167,9 @@ int main()
         auto eccentricAnomalies = OrbitalMechanics::eccentricAnomaly(date_times, tle.getMeanAnomaly(), tle.getMeanMotion(), tle.getEccentricity(), tle.getEpoch());
         auto trueAnomalies = OrbitalMechanics::trueAnomaly(eccentricAnomalies, tle.getEccentricity());
 
-        Eigen::MatrixXd m_i_r(3, date_times.size());
+        MatrixXd m_i_r(3, date_times.size());
         m_i_r.setZero();
-        Eigen::MatrixXd m_i_v(3, date_times.size());
+        MatrixXd m_i_v(3, date_times.size());
         m_i_v.setZero();
 
         for (int i = 0; i < trueAnomalies.size(); i++)
@@ -82,7 +180,7 @@ int main()
             m_i_v.col(i) = i_v;
         }
 
-        nadir_frame(m_i_r, m_i_v);
+        auto [q_in, n_omega_n] = nadir_frame(m_i_r, m_i_v);
 
         // Save to file
         auto ts = DateTime::getCurrentTimestamp();
