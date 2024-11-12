@@ -98,3 +98,18 @@ Licensed under the MIT License. See LICENSE in the project root for license info
 - Improvement: strong types or unit libraries in the OrbitalMechanics namespace (**kilometers** and **radians** instead of **double**). Possible solutions: type-safe wrappers using **struct**, type aliases with **std::chrono::duration**, unit libraries like **MPark.Units** or **Boost.Units**.
 - Improvement: consider [OTL](https://github.com/Jmbryan/OTL) for orbital mechanics.
 - Improvement: refactor TLE into Orbit
+- Improvement: precision of ecef2eci conversion.
+
+https://programiz.pro/ide/python
+https://raw.githubusercontent.com/eribean/Geneci/refs/heads/main/geneci/conversions.py
+
+# Define the input parameters
+ecef_point = np.array([3784972.26595145, 896365.783633651, 5037929.21063147], dtype=np.float64)
+utc_time = datetime.strptime("04-Jul-2023 14:25:00", "%d-%b-%Y %H:%M:%S")
+ecef_velocity = np.array([0.0, 0.0, 0.0], dtype=np.float64)
+
+# Invoke the function with the given inputs
+eci_point, eci_velocity = ecef_to_eci(ecef_point, utc_time, ecef_velocity)
+
+print(eci_point)    # [-3410576.75207984  1849283.01581851  5045625.42664478]
+print(eci_velocity) # [-134.8406056  -249.53731679    0.31331844]

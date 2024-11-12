@@ -65,6 +65,8 @@
     "optional": "cpp",
     "ranges": "cpp",
     "span": "cpp",
-    "core": "cpp"
+    "core": "cpp",
+    "geometry": "cpp",
+    "dense": "cpp"
   }
 }

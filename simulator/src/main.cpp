@@ -7,116 +7,25 @@
 #include "dateTime.hpp"
 #include "OrbitalMechanics.h"
 #include "DB.hpp"
+#include "MathHelpers.hpp"
+#include "Conversions.hpp"
 
 using namespace Eigen;
 using namespace std;
-
-Eigen::VectorXd lla2ecef(const Eigen::VectorXd &lla)
-{
-    const double lat = lla[0];
-    const double lon = lla[1];
-    const double alt = lla[2];
-
-    // WGS84 ellipsoid constants
-    constexpr double a = 6378137.0;         // semi-major axis in meters
-    constexpr double f = 1 / 298.257223563; // flattening
-    constexpr double e2 = 2 * f - f * f;    // first eccentricity squared
-
-    // Convert latitude and longitude from degrees to radians
-    double latRad = lat * M_PI / 180.0;
-    double lonRad = lon * M_PI / 180.0;
-
-    // Radius of curvature in the prime vertical
-    double N = a / std::sqrt(1 - e2 * std::sin(latRad) * std::sin(latRad));
-
-    double x = (N + alt) * std::cos(latRad) * std::cos(lonRad);
-    double y = (N + alt) * std::cos(latRad) * std::sin(lonRad);
-    double z = ((1 - e2) * N + alt) * std::sin(latRad);
-
-    Eigen::VectorXd ecef(3);
-    ecef << x, y, z;
-    return ecef;
-}
-
-MatrixXd cross(const MatrixXd &a, const MatrixXd &b)
-{
-    if (a.rows() != 3 || b.rows() != 3 || a.cols() != b.cols())
-    {
-        std::cerr << "Error: Matrices must be 3xN in size and have the same number of columns.\n";
-        exit(1); // Exit if the matrices have incompatible sizes
-    }
-
-    // Initialize the result matrix with the same number of rows and columns
-    MatrixXd x(3, a.cols());
-
-    // Loop over each column and compute the cross product
-    for (int i = 0; i < a.cols(); ++i)
-    {
-        // Extract the 3D vectors from the matrices (column i)
-        Vector3d posVec = a.col(i);
-        Vector3d velVec = b.col(i);
-
-        // Compute the cross product and store it in the result matrix
-        x.col(i) = posVec.cross(velVec);
-    }
-
-    return x;
-}
-
-std::vector<Matrix3d> reshapeAndPagetranspose(const MatrixXd &x, const MatrixXd &y, const MatrixXd &z)
-{
-    int cols = x.cols();
-    int rows = x.rows();
-
-    std::vector<MatrixXd> reshaped_x, reshaped_y, reshaped_z;
-
-    for (int i = 0; i < cols; ++i)
-    {
-        MatrixXd slice_x(rows, 1);
-        MatrixXd slice_y(rows, 1);
-        MatrixXd slice_z(rows, 1);
-
-        for (int j = 0; j < rows; ++j)
-        {
-            slice_x(j, 0) = x(j, i);
-            slice_y(j, 0) = y(j, i);
-            slice_z(j, 0) = z(j, i);
-        }
-
-        reshaped_x.push_back(slice_x);
-        reshaped_y.push_back(slice_y);
-        reshaped_z.push_back(slice_z);
-    }
-
-    std::vector<Matrix3d> attitude_matrix_pages;
-
-    for (int i = 0; i < cols; ++i)
-    {
-        // Combine slices along the third dimension (column)
-        MatrixXd attitude_matrix(rows, rows);
-        attitude_matrix.col(0) = reshaped_x[i];
-        attitude_matrix.col(1) = reshaped_y[i];
-        attitude_matrix.col(2) = reshaped_z[i];
-
-        attitude_matrix_pages.push_back(attitude_matrix.transpose()); // Page transpose
-    }
-
-    return attitude_matrix_pages;
-}
 
 std::pair<std::vector<Quaterniond>, MatrixXd> nadir_frame(const MatrixXd &position, const MatrixXd &velocity)
 {
     int count = position.cols();
 
-    MatrixXd angular_momentum = cross(position, velocity);
+    MatrixXd angular_momentum = MathHelpers::cross(position, velocity);
 
     // z = -position ./ vecnorm(position);
     MatrixXd z = -(position.array().rowwise() / position.colwise().norm().array());
     // y = -angular_momentum ./ vecnorm(angular_momentum);
     MatrixXd y = -(angular_momentum.array().rowwise() / angular_momentum.colwise().norm().array());
-    MatrixXd x = cross(y, z);
+    MatrixXd x = MathHelpers::cross(y, z);
 
-    std::vector<Matrix3d> attitude_matrix_pages = reshapeAndPagetranspose(x, y, z);
+    std::vector<Matrix3d> attitude_matrix_pages = MathHelpers::reshapeAndPagetranspose(x, y, z);
 
     // attitude = smooth_quaternion(quaternion(attitude_matrix, 'rotmat', 'frame'));
     // ignoring smooth_quaternion
@@ -142,12 +51,19 @@ std::pair<std::vector<Quaterniond>, MatrixXd> nadir_frame(const MatrixXd &positi
     return {attitude, angular_rate};
 }
 
-void target_pointing_frame(const MatrixXd &position, const MatrixXd &velocity, const Eigen::VectorXd &gs_r, const std::vector<std::chrono::_V2::system_clock::time_point> &date_times)
+void target_pointing_frame(const MatrixXd &position, const MatrixXd &velocity, const VectorXd &gs_r, const std::vector<std::chrono::_V2::system_clock::time_point> &date_times)
 {
-    auto ecef = lla2ecef(gs_r); // in meters
+    auto r_ecef = Conversions::lla2ecef(gs_r); // in meters
+    VectorXd v_ecef(3);
+    v_ecef << 0, 0, 0;
+    auto [r_eci, v_eci] = Conversions::ecef_to_eci(r_ecef, date_times[0], v_ecef);
 
     std::cout << "ECEF Coordinates:\n";
-    std::cout << ecef << "\n";
+    std::cout << r_ecef << "\n";
+    std::cout << "ECI Coordinates:\n";
+    std::cout << r_eci << "\n";
+    std::cout << "ECI Velocities:\n";
+    std::cout << v_eci << "\n";
 }
 
 int main()
