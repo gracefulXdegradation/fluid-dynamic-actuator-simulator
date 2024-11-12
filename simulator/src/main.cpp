@@ -158,6 +158,7 @@ int main()
         DB::serializeTimePointsToCSV(date_times, "./output/" + ts, "t.csv");
 
         std::cout << "Data saved to output.txt" << std::endl;
+        std::cout << "GS: " << config.getGroundStationPosition() << std::endl;
     }
     catch (const exception &e)
     {
