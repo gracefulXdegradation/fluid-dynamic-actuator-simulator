@@ -7,7 +7,7 @@ namespace OrbitalMechanics
 {
   const double mu_earth = 3.986e5; // Earth's gravitational constant (Km^3/s^2)
 
-  std::pair<Eigen::VectorXd, Eigen::VectorXd> keplerian2ijk(
+  std::pair<Eigen::Vector3d, Eigen::Vector3d> keplerian2ijk(
       double sma, // Semi-major axis (Km)
       double ecc, // Eccentricity
       double inc, // Inclination (rad)
@@ -47,9 +47,9 @@ namespace OrbitalMechanics
     // std::array<double, 3> r = {X, Y, Z};
     // std::array<double, 3> v = {Vx, Vy, Vz};
 
-    Eigen::VectorXd r(3);
+    Eigen::Vector3d r(3);
     r << X, Y, Z;
-    Eigen::VectorXd v(3);
+    Eigen::Vector3d v(3);
     v << Vx, Vy, Vz;
 
     return {r, v};

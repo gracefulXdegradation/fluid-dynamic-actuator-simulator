@@ -13,7 +13,7 @@
 using namespace Eigen;
 using namespace std;
 
-std::pair<std::vector<Quaterniond>, MatrixXd> nadir_frame(const MatrixXd &position, const MatrixXd &velocity)
+std::pair<std::vector<Quaterniond>, Matrix3Xd> nadir_frame(const Matrix3Xd &position, const Matrix3Xd &velocity)
 {
     int count = position.cols();
 
@@ -56,8 +56,8 @@ void target_pointing_frame(const MatrixXd &r_inert, const MatrixXd &v_inert, con
     Vector3d gs_r_ecef = Conversions::lla2ecef(gs_r); // in meters
     Vector3d gs_v_ecef(3);
     gs_v_ecef << 0, 0, 0;
-    MatrixXd gs_r_inert(3, date_times.size());
-    MatrixXd gs_v_inert(3, date_times.size());
+    Matrix3Xd gs_r_inert(3, date_times.size());
+    Matrix3Xd gs_v_inert(3, date_times.size());
     for (int i = 0; i < date_times.size(); i++)
     {
         auto [gs_r_eci, gs_v_eci] = Conversions::ecef_to_eci(gs_r_ecef, date_times[i], gs_v_ecef);
@@ -65,18 +65,18 @@ void target_pointing_frame(const MatrixXd &r_inert, const MatrixXd &v_inert, con
         gs_v_inert.col(i) = gs_v_eci;
     }
 
-    MatrixXd orbit_angular_momentum = MathHelpers::cross(r_inert, v_inert);
+    Matrix3Xd orbit_angular_momentum = MathHelpers::cross(r_inert, v_inert);
 
     // ground station position and velocity are converted to km and km/s
-    MatrixXd delta_v_inert = gs_v_inert / 1000.0 - v_inert;
-    MatrixXd distance_inert = gs_r_inert / 1000.0 - r_inert;
+    Matrix3Xd delta_v_inert = gs_v_inert / 1000.0 - v_inert;
+    Matrix3Xd distance_inert = gs_r_inert / 1000.0 - r_inert;
 
-    MatrixXd inertial_target_rate(3, date_times.size());
+    Matrix3Xd inertial_target_rate(3, date_times.size());
 
     for (int i = 0; i < date_times.size(); i++)
     {
-        Vector3d dist_inert_vec = distance_inert.col(i).head<3>();
-        Vector3d delta_v_inert_vec = delta_v_inert.col(i).head<3>();
+        Vector3d dist_inert_vec = distance_inert.col(i);
+        Vector3d delta_v_inert_vec = delta_v_inert.col(i);
         inertial_target_rate.col(i) = dist_inert_vec.cross(delta_v_inert_vec) / dist_inert_vec.dot(dist_inert_vec);
     }
 
@@ -108,9 +108,9 @@ int main()
         auto eccentricAnomalies = OrbitalMechanics::eccentricAnomaly(date_times, tle.getMeanAnomaly(), tle.getMeanMotion(), tle.getEccentricity(), tle.getEpoch());
         auto trueAnomalies = OrbitalMechanics::trueAnomaly(eccentricAnomalies, tle.getEccentricity());
 
-        MatrixXd m_i_r(3, date_times.size());
+        Matrix3Xd m_i_r(3, date_times.size());
         m_i_r.setZero();
-        MatrixXd m_i_v(3, date_times.size());
+        Matrix3Xd m_i_v(3, date_times.size());
         m_i_v.setZero();
 
         for (int i = 0; i < trueAnomalies.size(); i++)

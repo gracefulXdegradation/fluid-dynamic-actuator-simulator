@@ -10,7 +10,7 @@ namespace OrbitalMechanics
 {
 
   // Function to convert Keplerian elements to Cartesian coordinates in geocentric-equatorial reference
-  std::pair<Eigen::VectorXd, Eigen::VectorXd> keplerian2ijk(
+  std::pair<Eigen::Vector3d, Eigen::Vector3d> keplerian2ijk(
       double sma, // Semi-major axis (Km)
       double ecc, // Eccentricity
       double inc, // Inclination (rad)
