@@ -1,5 +1,10 @@
 {
   "start_date_time": "2023-07-04 14:25:00",
   "end_date_time": "2023-07-04 14:45:00",
-  "control_time_step": 500
+  "control_time_step": 500,
+  "ground_station_lla": {
+    "lat": 52.515133,
+    "lon": 13.323456,
+    "alt": 50.0
+  }
 }

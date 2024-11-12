@@ -20,6 +20,7 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
 
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+include_directories(${EIGEN3_INCLUDE_DIR})
 
 # Define the executable target
 add_executable(${PROJECT_NAME} ${SOURCES})

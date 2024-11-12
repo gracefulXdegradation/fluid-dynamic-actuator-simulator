@@ -4,12 +4,13 @@
 #include <array>
 #include <vector>
 #include <chrono>
+#include <Eigen/Dense>
 
 namespace OrbitalMechanics
 {
 
   // Function to convert Keplerian elements to Cartesian coordinates in geocentric-equatorial reference
-  std::pair<std::array<double, 3>, std::array<double, 3>> keplerian2ijk(
+  std::pair<Eigen::Vector3d, Eigen::Vector3d> keplerian2ijk(
       double sma, // Semi-major axis (Km)
       double ecc, // Eccentricity
       double inc, // Inclination (rad)
@@ -19,9 +20,9 @@ namespace OrbitalMechanics
   );
 
   // Calculate eccentric anomalies for every timestamp (in seconds) based on a single mean anomaly, mean motion, eccentricity, and epoch
-  std::vector<double> eccentricAnomaly(const std::vector<std::chrono::system_clock::time_point> &timestamps, double M, double mean_motion, double ecc, std::chrono::system_clock::time_point epoch);
+  Eigen::VectorXd eccentricAnomaly(const std::vector<std::chrono::system_clock::time_point> &timestamps, double M, double mean_motion, double ecc, std::chrono::system_clock::time_point epoch);
 
-  std::vector<double> trueAnomaly(const std::vector<double> &E, double e);
+  Eigen::VectorXd trueAnomaly(const Eigen::VectorXd &E, double e);
 }
 
 #endif

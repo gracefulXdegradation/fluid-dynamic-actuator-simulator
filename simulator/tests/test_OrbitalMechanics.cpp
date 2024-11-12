@@ -4,8 +4,9 @@
 #include <chrono>
 #include "OrbitalMechanics.h"
 #include "dateTime.hpp"
+#include <Eigen/Dense>
 
-bool areApproxEqual(const std::array<double, 3> &arr1, const std::array<double, 3> &arr2, double tolerance = 1e-6)
+bool areApproxEqual(const Eigen::VectorXd &arr1, const Eigen::VectorXd &arr2, double tolerance = 1e-6)
 {
   for (size_t i = 0; i < arr1.size(); ++i)
   {
@@ -28,8 +29,10 @@ bool test_keplerian2ijk()
   double raan = 2.7630; // Right Ascension of Ascending Node in radians
 
   // Expected output (sample values; adjust as necessary)
-  std::array<double, 3> expected_position = {-6197.14, 2646.76, 1252.95}; // Example position vector in Km
-  std::array<double, 3> expected_velocity = {1.66783, 0.413577, 7.42888}; // Example velocity vector in Km/s
+  Eigen::VectorXd expected_position(3); // Example position vector in Km
+  expected_position << -6197.14, 2646.76, 1252.95;
+  Eigen::VectorXd expected_velocity(3); // Example velocity vector in Km/s
+  expected_velocity << 1.66783, 0.413577, 7.42888;
 
   auto [computed_position, computed_velocity] = OrbitalMechanics::keplerian2ijk(sma, ecc, inc, w, nu, raan);
 

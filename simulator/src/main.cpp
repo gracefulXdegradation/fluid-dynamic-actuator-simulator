@@ -4,6 +4,7 @@
 #include "TLE.h"
 #include "config.hpp"
 #include "dateTime.hpp"
+#include "Frames.hpp"
 #include "OrbitalMechanics.h"
 #include "DB.hpp"
 
@@ -12,7 +13,6 @@ using namespace std;
 
 int main()
 {
-
     // Create an instance of ConfigParser with the path to your config.json
     Config config(string(BUILD_OUTPUT_PATH) + "/config.json");
 
@@ -31,41 +31,38 @@ int main()
         auto eccentricAnomalies = OrbitalMechanics::eccentricAnomaly(date_times, tle.getMeanAnomaly(), tle.getMeanMotion(), tle.getEccentricity(), tle.getEpoch());
         auto trueAnomalies = OrbitalMechanics::trueAnomaly(eccentricAnomalies, tle.getEccentricity());
 
-        std::vector<std::array<double, 3>> radius_vectors;
-        std::vector<std::array<double, 3>> velocity_vectors;
-        radius_vectors.reserve(date_times.size());
-        velocity_vectors.reserve(date_times.size());
+        Matrix3Xd m_i_r(3, date_times.size());
+        m_i_r.setZero();
+        Matrix3Xd m_i_v(3, date_times.size());
+        m_i_v.setZero();
 
-        for (const auto &trueAnomaly : trueAnomalies)
+        for (int i = 0; i < trueAnomalies.size(); i++)
         {
-            auto [i_r, i_v] = OrbitalMechanics::keplerian2ijk(tle.getSemiMajorAxis(), tle.getEccentricity(), tle.getInclination(), tle.getArgumentOfPerigee(), trueAnomaly, tle.getRightAscension());
-            radius_vectors.push_back(i_r);
-            velocity_vectors.push_back(i_v);
+            auto &ta = trueAnomalies[i];
+            auto [i_r, i_v] = OrbitalMechanics::keplerian2ijk(tle.getSemiMajorAxis(), tle.getEccentricity(), tle.getInclination(), tle.getArgumentOfPerigee(), ta, tle.getRightAscension());
+            m_i_r.col(i) = i_r;
+            m_i_v.col(i) = i_v;
         }
 
-        auto ts = DateTime::getCurrentTimestamp();
+        auto [q_in, n_omega_n] = Frames::nadir_frame(m_i_r, m_i_v);
+        auto [q_it, t_omega_t, i_r_gs, i_v_gs] = Frames::target_pointing_frame(m_i_r, m_i_v, config.getGroundStationPosition(), date_times);
+
+        std::cout << "q_it" << std::endl;
+        std::cout << q_it[0] << std::endl;
+        std::cout << "t_omega_t" << std::endl;
+        std::cout << t_omega_t.col(0) << std::endl;
+        std::cout << "i_r_gs" << std::endl;
+        std::cout << i_r_gs.col(0) << std::endl;
+        std::cout << "i_v_gs" << std::endl;
+        std::cout << i_v_gs.col(0) << std::endl;
 
         // Save to file
-        DB::writematrix(DB::transpose(radius_vectors), "./output/" + ts, "i_r.csv");
-        DB::writematrix(DB::transpose(velocity_vectors), "./output/" + ts, "i_v.csv");
+        auto ts = DateTime::getCurrentTimestamp();
+        DB::writematrix(m_i_r, "./output/" + ts, "i_r.csv");
+        DB::writematrix(m_i_v, "./output/" + ts, "i_v.csv");
         DB::serializeTimePointsToCSV(date_times, "./output/" + ts, "t.csv");
 
         std::cout << "Data saved to output.txt" << std::endl;
-
-        // MatrixXd A(2, 3);
-        // A << 1, 2, 3,
-        //     4, 5, 6;
-
-        // MatrixXd B(3, 2);
-        // B << 7, 8,
-        //     9, 10,
-        //     11, 12;
-
-        // MatrixXd result = A * B;
-        // MatrixXd transposedResult = result.transpose();
-
-        // cout << "Result of (A * B)^T:\n"
-        //      << transposedResult << endl;
     }
     catch (const exception &e)
     {
