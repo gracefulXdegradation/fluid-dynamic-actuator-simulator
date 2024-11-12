@@ -11,6 +11,33 @@
 using namespace Eigen;
 using namespace std;
 
+Eigen::VectorXd lla2ecef(const Eigen::VectorXd &lla)
+{
+    const double lat = lla[0];
+    const double lon = lla[1];
+    const double alt = lla[2];
+
+    // WGS84 ellipsoid constants
+    constexpr double a = 6378137.0;         // semi-major axis in meters
+    constexpr double f = 1 / 298.257223563; // flattening
+    constexpr double e2 = 2 * f - f * f;    // first eccentricity squared
+
+    // Convert latitude and longitude from degrees to radians
+    double latRad = lat * M_PI / 180.0;
+    double lonRad = lon * M_PI / 180.0;
+
+    // Radius of curvature in the prime vertical
+    double N = a / std::sqrt(1 - e2 * std::sin(latRad) * std::sin(latRad));
+
+    double x = (N + alt) * std::cos(latRad) * std::cos(lonRad);
+    double y = (N + alt) * std::cos(latRad) * std::sin(lonRad);
+    double z = ((1 - e2) * N + alt) * std::sin(latRad);
+
+    Eigen::VectorXd ecef(3);
+    ecef << x, y, z;
+    return ecef;
+}
+
 MatrixXd cross(const MatrixXd &a, const MatrixXd &b)
 {
     if (a.rows() != 3 || b.rows() != 3 || a.cols() != b.cols())
@@ -115,9 +142,16 @@ std::pair<std::vector<Quaterniond>, MatrixXd> nadir_frame(const MatrixXd &positi
     return {attitude, angular_rate};
 }
 
+void target_pointing_frame(const MatrixXd &position, const MatrixXd &velocity, const Eigen::VectorXd &gs_r, const std::vector<std::chrono::_V2::system_clock::time_point> &date_times)
+{
+    auto ecef = lla2ecef(gs_r); // in meters
+
+    std::cout << "ECEF Coordinates:\n";
+    std::cout << ecef << "\n";
+}
+
 int main()
 {
-
     // Create an instance of ConfigParser with the path to your config.json
     Config config(string(BUILD_OUTPUT_PATH) + "/config.json");
 
@@ -150,6 +184,7 @@ int main()
         }
 
         auto [q_in, n_omega_n] = nadir_frame(m_i_r, m_i_v);
+        target_pointing_frame(m_i_r, m_i_v, config.getGroundStationPosition(), date_times);
 
         // Save to file
         auto ts = DateTime::getCurrentTimestamp();
@@ -158,7 +193,6 @@ int main()
         DB::serializeTimePointsToCSV(date_times, "./output/" + ts, "t.csv");
 
         std::cout << "Data saved to output.txt" << std::endl;
-        std::cout << "GS: " << config.getGroundStationPosition() << std::endl;
     }
     catch (const exception &e)
     {
