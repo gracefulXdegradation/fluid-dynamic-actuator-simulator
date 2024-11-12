@@ -51,19 +51,41 @@ std::pair<std::vector<Quaterniond>, MatrixXd> nadir_frame(const MatrixXd &positi
     return {attitude, angular_rate};
 }
 
-void target_pointing_frame(const MatrixXd &position, const MatrixXd &velocity, const VectorXd &gs_r, const std::vector<std::chrono::_V2::system_clock::time_point> &date_times)
+void target_pointing_frame(const MatrixXd &r_inert, const MatrixXd &v_inert, const Vector3d &gs_r, const std::vector<std::chrono::_V2::system_clock::time_point> &date_times)
 {
-    auto r_ecef = Conversions::lla2ecef(gs_r); // in meters
-    VectorXd v_ecef(3);
-    v_ecef << 0, 0, 0;
-    auto [r_eci, v_eci] = Conversions::ecef_to_eci(r_ecef, date_times[0], v_ecef);
+    Vector3d gs_r_ecef = Conversions::lla2ecef(gs_r); // in meters
+    Vector3d gs_v_ecef(3);
+    gs_v_ecef << 0, 0, 0;
+    MatrixXd gs_r_inert(3, date_times.size());
+    MatrixXd gs_v_inert(3, date_times.size());
+    for (int i = 0; i < date_times.size(); i++)
+    {
+        auto [gs_r_eci, gs_v_eci] = Conversions::ecef_to_eci(gs_r_ecef, date_times[i], gs_v_ecef);
+        gs_r_inert.col(i) = gs_r_eci;
+        gs_v_inert.col(i) = gs_v_eci;
+    }
 
-    std::cout << "ECEF Coordinates:\n";
-    std::cout << r_ecef << "\n";
-    std::cout << "ECI Coordinates:\n";
-    std::cout << r_eci << "\n";
-    std::cout << "ECI Velocities:\n";
-    std::cout << v_eci << "\n";
+    MatrixXd orbit_angular_momentum = MathHelpers::cross(r_inert, v_inert);
+
+    // ground station position and velocity are converted to km and km/s
+    MatrixXd delta_v_inert = gs_v_inert / 1000.0 - v_inert;
+    MatrixXd distance_inert = gs_r_inert / 1000.0 - r_inert;
+
+    MatrixXd inertial_target_rate(3, date_times.size());
+
+    for (int i = 0; i < date_times.size(); i++)
+    {
+        Vector3d dist_inert_vec = distance_inert.col(i).head<3>();
+        Vector3d delta_v_inert_vec = delta_v_inert.col(i).head<3>();
+        inertial_target_rate.col(i) = dist_inert_vec.cross(delta_v_inert_vec) / dist_inert_vec.dot(dist_inert_vec);
+    }
+
+    std::cout << "distance_inert:" << std::endl;
+    std::cout << distance_inert.col(0) << std::endl;
+    std::cout << "delta_v_inert:" << std::endl;
+    std::cout << delta_v_inert.col(0) << std::endl;
+    std::cout << "inertial_target_rate:" << std::endl;
+    std::cout << inertial_target_rate.col(0) << std::endl;
 }
 
 int main()

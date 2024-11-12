@@ -106,7 +106,7 @@ namespace Conversions
   }
 
   // https://fossies.org/linux/gpsd/contrib/lla2ecef.c
-  inline VectorXd lla2ecef(const VectorXd &lla)
+  inline Vector3d lla2ecef(const Vector3d &lla)
   {
     const double lat = lla[0];
     const double lon = lla[1];
@@ -128,7 +128,7 @@ namespace Conversions
     double y = (N + alt) * std::cos(latRad) * std::sin(lonRad);
     double z = ((1 - e2) * N + alt) * std::sin(latRad);
 
-    VectorXd ecef(3);
+    Vector3d ecef;
     ecef << x, y, z;
     return ecef;
   }

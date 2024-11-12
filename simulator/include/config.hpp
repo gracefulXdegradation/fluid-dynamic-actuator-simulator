@@ -29,7 +29,6 @@ public:
       double lat = config["ground_station_lla"]["lat"];
       double lon = config["ground_station_lla"]["lon"];
       double alt = config["ground_station_lla"]["alt"];
-      gs_r.resize(3);
       gs_r << lat, lon, alt;
     }
     else
@@ -53,7 +52,7 @@ public:
     return control_time_step;
   }
 
-  const Eigen::VectorXd &getGroundStationPosition() const
+  const Eigen::Vector3d &getGroundStationPosition() const
   {
     return gs_r;
   }
@@ -63,5 +62,5 @@ private:
   system_clock::time_point start_date_time;
   system_clock::time_point end_date_time;
   milliseconds control_time_step;
-  Eigen::VectorXd gs_r;
+  Eigen::Vector3d gs_r;
 };
