@@ -16,7 +16,7 @@ using namespace std;
 // inside cone drawn by ground station FOV) and distance < 1.5e6 m
 // (ground station is in range of satellite laser communication terminal) is
 // satisfied.
-std::pair<Eigen::VectorXi, int64_t> contact_check(const VectorXi &access, const VectorXd &distance, const std::vector<std::chrono::_V2::system_clock::time_point> &date_times)
+std::pair<VectorXi, int64_t> contact_check(const VectorXi &access, const VectorXd &distance, const std::vector<std::chrono::_V2::system_clock::time_point> &date_times)
 {
     // Ensure input sizes match
     if (access.size() != distance.size() || access.size() != date_times.size())
@@ -24,7 +24,7 @@ std::pair<Eigen::VectorXi, int64_t> contact_check(const VectorXi &access, const 
         throw std::invalid_argument("Input vectors must have the same size.");
     }
 
-    Eigen::VectorXi contact = Eigen::VectorXi::Zero(access.size());
+    VectorXi contact = VectorXi::Zero(access.size());
 
     for (int k = 0; k < access.size(); k++)
     {
@@ -91,6 +91,34 @@ std::pair<VectorXd, VectorXi> visibility(const Matrix3Xd &i_r, const Matrix3Xd &
     return std::make_pair(el, v);
 }
 
+Vector2d SimpleFluidDynamicActuator(const std::chrono::_V2::system_clock::time_point time, const Vector2d &actuator_state, double control, double gain, double time_constant)
+{
+    Vector2d state_derivative;
+
+    // Calculating the derivatives
+    state_derivative(0) = actuator_state(1) + gain / time_constant * control;
+    state_derivative(1) = -actuator_state(1) / time_constant - gain / (time_constant * time_constant) * control;
+
+    return state_derivative;
+};
+
+using ModelFunction = std::function<Vector2d(std::chrono::_V2::system_clock::time_point, const Vector2d &, double)>;
+
+// TetrahedronActuatorAssembly function
+Matrix<double, 8, 1> TetrahedronActuatorAssembly(const std::chrono::_V2::system_clock::time_point time, const Matrix<double, 8, 1> &state, const Vector4d &control, ModelFunction model)
+{
+    Matrix<double, 8, 1> state_derivative = Matrix<double, 8, 1>::Zero();
+
+    for (int i = 0; i < 4; i++)
+    {
+        int start_index = 2 * i;
+        Vector2d actuator_state = state.segment<2>(start_index);
+        Vector2d actuator_derivative = model(time, actuator_state, control(i));
+        state_derivative.segment<2>(start_index) = actuator_derivative;
+    }
+
+    return state_derivative;
+}
 int main()
 {
 
@@ -98,7 +126,7 @@ int main()
     Config config(string(BUILD_OUTPUT_PATH) + "/config.json");
 
     // Generate discrete time points using the function
-    auto date_times = DateTime::generateTimePoints(config.getStartDateTime(), config.getEndDateTime(), config.getControlTimeStep());
+    std::vector<std::chrono::_V2::system_clock::time_point> date_times = DateTime::generateTimePoints(config.getStartDateTime(), config.getEndDateTime(), config.getControlTimeStep());
 
     // Output the time points
     cout << "Executing simulation" << endl;
@@ -134,16 +162,16 @@ int main()
 
         // ----- Attitude from commanded frame to inertial frame -----
 
-        std::vector<Eigen::Quaterniond> q_ic(q_in.size());
+        std::vector<Quaterniond> q_ic(q_in.size());
         for (int i = 0; i < q_in.size(); i++)
         {
             q_ic[i] = access[i] == 1 ? q_it[i] : q_in[i];
         }
 
         // ----- Attitude expressed relative to nadir pointing frame -----
-        std::vector<Eigen::Quaterniond> q_ni;
+        std::vector<Quaterniond> q_ni;
         q_ni.resize(q_in.size());
-        std::vector<Eigen::Quaterniond> q_nc;
+        std::vector<Quaterniond> q_nc;
         q_nc.resize(q_in.size());
 
         for (size_t i = 0; i < q_ni.size(); i++)
@@ -164,26 +192,37 @@ int main()
 
         // ----- Spacecraft setup -----
 
-        Eigen::Matrix3d inertia = Eigen::Matrix3d::Zero();
+        Matrix3d inertia = Matrix3d::Zero();
         inertia.diagonal().setConstant(0.002);
 
         double gamma = atan(sqrt(2.0));
-        Eigen::MatrixXd actuator_alignment(3, 4);
+        MatrixXd actuator_alignment(3, 4);
         actuator_alignment << sin(gamma), -sin(gamma), 0, 0,
             0, 0, sin(gamma), -sin(gamma),
             cos(gamma), cos(gamma), -cos(gamma), -cos(gamma);
-        Eigen::MatrixXd inverse_actuator_alignment = actuator_alignment.completeOrthogonalDecomposition().pseudoInverse();
+        MatrixXd inverse_actuator_alignment = actuator_alignment.completeOrthogonalDecomposition().pseudoInverse();
 
         // ----- Initial states -----
         // Spacecraft states
         // Vector4d initial_attitude = q_ic[0].coeffs();
         Vector3d initial_angular_rate = n_omega_n.col(0);
-        Eigen::Matrix<double, 8, 1> initial_actuator_state = Eigen::Matrix<double, 8, 1>::Zero();
-        Eigen::Matrix<double, 15, 1> initial_state;
+        Matrix<double, 8, 1> initial_actuator_state = Matrix<double, 8, 1>::Zero();
+        Matrix<double, 15, 1> initial_state;
         initial_state << q_ic[0].w(), q_ic[0].x(), q_ic[0].y(), q_ic[0].z(), initial_angular_rate, initial_actuator_state;
 
-        std::cout << "initial_state:\n"
-                  << initial_state << std::endl;
+        // ----- Fluid-dynamic actuator setup -----
+
+        double Ka = 120.236e-6;
+        double Ta = Ka / 861.584e-6;
+        auto actuator = [&](const std::chrono::_V2::system_clock::time_point time, const Vector2d &actuator_state, double control) -> Vector2d
+        {
+            return SimpleFluidDynamicActuator(time, actuator_state, control, Ka, Ta);
+        };
+
+        auto actuator_assembly = [&](const std::chrono::_V2::system_clock::time_point time, const Matrix<double, 8, 1> &state, const Vector4d &command) -> Matrix<double, 8, 1>
+        {
+            return TetrahedronActuatorAssembly(time, state, command, actuator);
+        };
 
         // Save to file
         auto ts = DateTime::getCurrentTimestamp();
