@@ -143,44 +143,15 @@ std::pair<Vector3d, Vector3d> TetrahedronActuatorAssemblyPropertyExtractor(
     return std::make_pair(b_angular_momentum, b_torque);
 }
 
-// typedef std::array<double, 2> state_type;
-
-// struct pendulum
-// {
-//     double m_mu, m_omega, m_eps;
-//     pendulum(double mu, double omega, double eps)
-//         : m_mu(mu), m_omega(omega), m_eps(eps) {}
-//     void operator()(const state_type &x,
-//                     state_type &dxdt, double t) const
-//     {
-//         dxdt[0] = x[1];
-//         dxdt[1] = -sin(x[0]) - m_mu * x[1] +
-//                   m_eps * sin(m_omega * t);
-//     }
-// };
-
-// struct simple_fluid_dynamic_actuator
-// {
-//     double m_control, m_gain, m_time_constant;
-//     simple_fluid_dynamic_actuator(double control, double gain, double time_constant)
-//         : m_control(control), m_gain(gain), m_time_constant(time_constant) {}
-//     void operator()(const Vector2d &state,
-//                     Vector2d &state_derivative, double t) const
-//     {
-//         state_derivative(0) = state(1) + m_gain / m_time_constant * m_control;
-//         state_derivative(1) = -state(1) / m_time_constant - m_gain / (m_time_constant * m_time_constant) * m_control;
-//     }
-// };
-
 // ======
 // Defining a shorthand for the type of the mathematical state
 typedef std::vector<double> state_type;
 
 // System to be solved: dx/dt = -2 x
-void my_system(const state_type &x, state_type &dxdt, const double t)
+void simple_fluid_dynamic_actuator(const state_type &x, state_type &dxdt, const double control, const double gain, const double time_constant)
 {
-    dxdt[0] = 0 * x[0] + 1 * x[1];
-    dxdt[1] = -1 * x[0] - 2.2 * x[1];
+    dxdt[0] = x[1] + gain / time_constant * control;
+    dxdt[1] = -x[1] / time_constant - gain / (time_constant * time_constant) * control;
 }
 
 // Observer, prints time and state when called (during integration)
@@ -192,65 +163,30 @@ void my_observer(const state_type &x, const double t)
 
 int main()
 {
-    state_type x0 = {0.0, 1.0}; // Initial condition, vector of 1 element (scalar problem)
+    state_type x0 = {0.0, 0.0};
 
     // Integration parameters
     double t0 = 0.0;
-    double t1 = 20.0;
-    double dt = 1.0;
+    double t1 = 0.5;
+    double dt = 0.01;
+
+    double gain = 120.236e-6;
+    double time_constant = gain / 861.584e-6;
+    double command = -0.23606797749979;
+
+    auto my_system = [&](const state_type &x, state_type &dxdt, const double t)
+    {
+        simple_fluid_dynamic_actuator(x, dxdt, command, gain, time_constant);
+    };
 
     // Define the error stepper
     typedef odeint::runge_kutta_cash_karp54<state_type> error_stepper_rkck54;
 
     // Error bounds
-    double err_abs = 1.0e-10;
-    double err_rel = 1.0e-6;
+    double err_abs = 1.0e-10; // consider 1e-6
+    double err_rel = 1.0e-6;  // consider 1e-3
 
     odeint::integrate_adaptive(odeint::make_controlled(err_abs, err_rel, error_stepper_rkck54()), my_system, x0, t0, t1, dt, my_observer);
-
-    // ============
-
-    // odeint::runge_kutta4<state_type> rk4;
-    // pendulum p(0.1, 1.05, 1.5);
-    // state_type x = {{1.0, 0.0}};
-    // double t = 0.0;
-    // const double dt = 0.01;
-
-    // rk4.do_step(p, x, t, dt);
-    // t += dt;
-
-    // std::cout << t << " " << x[0] << " " << x[1] << "\n";
-    // for (size_t i = 0; i < 10; ++i)
-    // {
-    //     rk4.do_step(p, x, t, dt);
-    //     t += dt;
-    //     std::cout << t << " " << x[0] << " " << x[1] << "\n";
-    // }
-
-    // =========
-    // odeint::runge_kutta4<Vector2d> stepper;
-    // auto controlled_stepper = odeint::make_controlled(1e-6, 1e-6, stepper);
-
-    // double gain = 120.236e-6;
-    // double time_constant = gain / 861.584e-6;
-    // double command = -0.23606797749979;
-    // simple_fluid_dynamic_actuator sfda(command, gain, time_constant);
-
-    // double t = 0.0;
-    // const double dt = 0.05;
-    // Vector2d x;
-    // x << 0, 0;
-
-    // odesolver.do_step(sfda, x, t, dt);
-    // t += dt;
-
-    // std::cout << t << " " << x[0] << " " << x[1] << "\n";
-    // for (size_t i = 0; i < 10; ++i)
-    // {
-    //     odesolver.do_step(sfda, x, t, dt);
-    //     t += dt;
-    //     std::cout << t << " " << x[0] << " " << x[1] << "\n";
-    // }
 
     // Create an instance of ConfigParser with the path to your config.json
     Config config(string(BUILD_OUTPUT_PATH) + "/config.json");
