@@ -162,6 +162,18 @@ int main()
         // Commanded angular rates with respect to nadir frame
         // n_omega_c = rotateframe(q_nc, c_omega_c')';
 
+        // ----- Spacecraft setup -----
+
+        Eigen::Matrix3d inertia = Eigen::Matrix3d::Zero();
+        inertia.diagonal().setConstant(0.002);
+
+        double gamma = atan(sqrt(2.0));
+        Eigen::MatrixXd actuator_alignment(3, 4);
+        actuator_alignment << sin(gamma), -sin(gamma), 0, 0,
+            0, 0, sin(gamma), -sin(gamma),
+            cos(gamma), cos(gamma), -cos(gamma), -cos(gamma);
+        Eigen::MatrixXd inverse_actuator_alignment = actuator_alignment.completeOrthogonalDecomposition().pseudoInverse();
+
         // Save to file
         auto ts = DateTime::getCurrentTimestamp();
         DB::writematrix(m_i_r, "./output/" + ts, "i_r.csv");
