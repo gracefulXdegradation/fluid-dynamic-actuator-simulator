@@ -119,9 +119,30 @@ Matrix<double, 8, 1> TetrahedronActuatorAssembly(const std::chrono::_V2::system_
 
     return state_derivative;
 }
+
+Matrix<double, 8, 1> TetrahedronActuatorAssemblyStateExtractor(const Matrix<double, 15, 1> &state)
+{
+    return state.segment(7, 8);
+}
+
+std::pair<Vector3d, Vector3d> TetrahedronActuatorAssemblyPropertyExtractor(
+    const Matrix<double, 8, 1> &state,
+    const Matrix<double, 8, 1> &state_derivative,
+    const Matrix<double, 3, 4> &alignment)
+{
+    // Extract elements 1, 3, 5, and 7 (0-based indices 0, 2, 4, 6)
+    Vector4d state_part, state_derivative_part;
+    state_part << state(0), state(2), state(4), state(6);
+    state_derivative_part << state_derivative(0), state_derivative(2), state_derivative(4), state_derivative(6);
+
+    Vector3d b_angular_momentum = alignment * state_part;
+    Vector3d b_torque = alignment * state_derivative_part;
+
+    return std::make_pair(b_angular_momentum, b_torque);
+}
+
 int main()
 {
-
     // Create an instance of ConfigParser with the path to your config.json
     Config config(string(BUILD_OUTPUT_PATH) + "/config.json");
 
@@ -222,6 +243,12 @@ int main()
         auto actuator_assembly = [&](const std::chrono::_V2::system_clock::time_point time, const Matrix<double, 8, 1> &state, const Vector4d &command) -> Matrix<double, 8, 1>
         {
             return TetrahedronActuatorAssembly(time, state, command, actuator);
+        };
+
+        auto actuator_property_extractor = [&](const Matrix<double, 8, 1> &state,
+                                               const Matrix<double, 8, 1> &state_derivative)
+        {
+            return TetrahedronActuatorAssemblyPropertyExtractor(state, state_derivative, actuator_alignment);
         };
 
         // Save to file
