@@ -132,6 +132,26 @@ int main()
         auto distance = (i_r_gs - m_i_r).colwise().norm();
         // contact_check(access, distance, date_times);
 
+        // ----- Attitude from commanded frame to inertial frame -----
+
+        std::vector<Eigen::Quaterniond> q_ic(q_in.size());
+        for (int i = 0; i < q_in.size(); i++)
+        {
+            q_ic[i] = access[i] == 1 ? q_it[i] : q_in[i];
+        }
+
+        // ----- Attitude expressed relative to nadir pointing frame -----
+        std::vector<Eigen::Quaterniond> q_ni;
+        q_ni.resize(q_in.size());
+        std::vector<Eigen::Quaterniond> q_nc;
+        q_nc.resize(q_in.size());
+
+        for (size_t i = 0; i < q_ni.size(); i++)
+        {
+            q_ni[i] = q_in[i].conjugate();
+            q_nc[i] = q_ni[i] * q_ic[0];
+        }
+
         // Save to file
         auto ts = DateTime::getCurrentTimestamp();
         DB::writematrix(m_i_r, "./output/" + ts, "i_r.csv");

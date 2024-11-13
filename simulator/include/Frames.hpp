@@ -68,9 +68,8 @@ namespace Frames
     }
 
     Matrix3Xd orbit_angular_momentum = MathHelpers::cross(r_inert, v_inert);
-
     Matrix3Xd delta_v_inert = gs_v_inert - v_inert;
-    Matrix3Xd distance_inert = gs_r_inert / 1000.0 - r_inert;
+    Matrix3Xd distance_inert = gs_r_inert - r_inert;
 
     Matrix3Xd inertial_target_rate(3, date_times.size());
 
