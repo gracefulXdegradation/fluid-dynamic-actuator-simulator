@@ -62,15 +62,14 @@ namespace Frames
     for (int i = 0; i < date_times.size(); i++)
     {
       auto [gs_r_eci, gs_v_eci] = Conversions::ecef_to_eci(gs_r_ecef, date_times[i], gs_v_ecef);
-      gs_r_inert.col(i) = gs_r_eci;
-      gs_v_inert.col(i) = gs_v_eci;
+      // ground station position and velocity are converted to km and km/s
+      gs_r_inert.col(i) = gs_r_eci / 1000.0;
+      gs_v_inert.col(i) = gs_v_eci / 1000.0;
     }
 
     Matrix3Xd orbit_angular_momentum = MathHelpers::cross(r_inert, v_inert);
-
-    // ground station position and velocity are converted to km and km/s
-    Matrix3Xd delta_v_inert = gs_v_inert / 1000.0 - v_inert;
-    Matrix3Xd distance_inert = gs_r_inert / 1000.0 - r_inert;
+    Matrix3Xd delta_v_inert = gs_v_inert - v_inert;
+    Matrix3Xd distance_inert = gs_r_inert - r_inert;
 
     Matrix3Xd inertial_target_rate(3, date_times.size());
 
