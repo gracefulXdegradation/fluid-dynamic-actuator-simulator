@@ -12,6 +12,59 @@
 using namespace Eigen;
 using namespace std;
 
+// Checks whether combined contact criterion of access == 1 (satellite is
+// inside cone drawn by ground station FOV) and distance < 1.5e6 m
+// (ground station is in range of satellite laser communication terminal) is
+// satisfied.
+std::pair<Eigen::VectorXi, int64_t> contact_check(const VectorXi &access, const VectorXd &distance, const std::vector<std::chrono::_V2::system_clock::time_point> &date_times)
+{
+    // Ensure input sizes match
+    if (access.size() != distance.size() || access.size() != date_times.size())
+    {
+        throw std::invalid_argument("Input vectors must have the same size.");
+    }
+
+    Eigen::VectorXi contact = Eigen::VectorXi::Zero(access.size());
+
+    for (int k = 0; k < access.size(); k++)
+    {
+        contact[k] = access[k] == 1 && distance[k] < 1.5e3;
+    }
+
+    auto condition = [](int x)
+    { return x == 1; };
+
+    // Variables to store the first and last index satisfying the condition
+    int first_index = -1;
+    int last_index = -1;
+
+    // Find the first element that satisfies the condition
+    for (int i = 0; i < contact.size(); ++i)
+    {
+        if (condition(contact(i)))
+        {
+            first_index = i;
+            break; // Exit after finding the first one
+        }
+    }
+
+    // Find the last element that satisfies the condition
+    for (int i = contact.size() - 1; i >= 0; --i)
+    {
+        if (condition(contact(i)))
+        {
+            last_index = i;
+            break; // Exit after finding the last one
+        }
+    }
+
+    int64_t duration = std::chrono::duration_cast<std::chrono::seconds>(date_times[last_index] - date_times[first_index]).count();
+
+    std::cout << duration << std::endl;
+
+    return std::make_pair(contact, duration);
+}
+
 // Function to calculate visibility angle
 std::pair<VectorXd, VectorXi> visibility(const Matrix3Xd &i_r, const Matrix3Xd &i_r_gs, double angle)
 {
@@ -77,8 +130,7 @@ int main()
 
         auto [elevation, access] = visibility(m_i_r, i_r_gs, MathHelpers::deg2rad(config.getGroundStationElevation()));
         auto distance = (i_r_gs - m_i_r).colwise().norm();
-
-        std::cout << distance.col(0) << std::endl;
+        // contact_check(access, distance, date_times);
 
         // Save to file
         auto ts = DateTime::getCurrentTimestamp();
