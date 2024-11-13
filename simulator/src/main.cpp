@@ -7,12 +7,40 @@
 #include "Frames.hpp"
 #include "OrbitalMechanics.h"
 #include "DB.hpp"
+#include <cmath>
 
 using namespace Eigen;
 using namespace std;
 
+// Function to calculate visibility angle
+std::pair<VectorXd, VectorXi> visibility(const Matrix3Xd &i_r, const Matrix3Xd &i_r_gs, double angle)
+{
+    // Calculate the vector from GS to SC
+    Matrix3Xd i_bard = i_r - i_r_gs;
+
+    // Normalize the vectors column-wise
+    Matrix3Xd norm_i_r_gs = i_r_gs.colwise().normalized();
+    Matrix3Xd norm_i_bard = i_bard.colwise().normalized();
+
+    // Compute the visibility angle (element-wise acos of dot products)
+    VectorXd elrad(i_r.cols());
+    for (int i = 0; i < i_r.cols(); ++i)
+    {
+        elrad(i) = acos(norm_i_r_gs.col(i).dot(norm_i_bard.col(i)));
+    }
+
+    // Check visibility condition
+    VectorXi v = (elrad.array() < angle).cast<int>();
+
+    // Convert elevation angles to degrees
+    VectorXd el = elrad.array() * (180.0 / M_PI);
+
+    return std::make_pair(el, v);
+}
+
 int main()
 {
+
     // Create an instance of ConfigParser with the path to your config.json
     Config config(string(BUILD_OUTPUT_PATH) + "/config.json");
 
@@ -47,14 +75,7 @@ int main()
         auto [q_in, n_omega_n] = Frames::nadir_frame(m_i_r, m_i_v);
         auto [q_it, t_omega_t, i_r_gs, i_v_gs] = Frames::target_pointing_frame(m_i_r, m_i_v, config.getGroundStationPosition(), date_times);
 
-        std::cout << "q_it" << std::endl;
-        std::cout << q_it[0] << std::endl;
-        std::cout << "t_omega_t" << std::endl;
-        std::cout << t_omega_t.col(0) << std::endl;
-        std::cout << "i_r_gs" << std::endl;
-        std::cout << i_r_gs.col(0) << std::endl;
-        std::cout << "i_v_gs" << std::endl;
-        std::cout << i_v_gs.col(0) << std::endl;
+        auto [el, v] = visibility(m_i_r, i_r_gs, MathHelpers::deg2rad(config.getGroundStationElevation()));
 
         // Save to file
         auto ts = DateTime::getCurrentTimestamp();

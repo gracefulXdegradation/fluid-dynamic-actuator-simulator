@@ -6,5 +6,6 @@
     "lat": 52.515133,
     "lon": 13.323456,
     "alt": 50.0
-  }
+  },
+  "ground_station_elevation": 95.0
 }

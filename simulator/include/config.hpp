@@ -23,6 +23,7 @@ public:
     start_date_time = DateTime::parseDateTime(config["start_date_time"]);
     end_date_time = DateTime::parseDateTime(config["end_date_time"]);
     control_time_step = milliseconds(config["control_time_step"]);
+    gs_elevation = config["ground_station_elevation"];
 
     if (config.contains("ground_station_lla") && config["ground_station_lla"].is_object())
     {
@@ -57,10 +58,16 @@ public:
     return gs_r;
   }
 
+  const double getGroundStationElevation() const
+  {
+    return gs_elevation;
+  }
+
 private:
   json config;
   system_clock::time_point start_date_time;
   system_clock::time_point end_date_time;
   milliseconds control_time_step;
   Eigen::Vector3d gs_r;
+  double gs_elevation;
 };
