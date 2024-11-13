@@ -93,7 +93,7 @@ std::pair<VectorXd, VectorXi> visibility(const Matrix3Xd &i_r, const Matrix3Xd &
     return std::make_pair(el, v);
 }
 
-Vector2d SimpleFluidDynamicActuator(const std::chrono::_V2::system_clock::time_point time, const Vector2d &actuator_state, double control, double gain, double time_constant)
+Vector2d SimpleFluidDynamicActuator(const double time, const Vector2d &actuator_state, double control, double gain, double time_constant)
 {
     Vector2d state_derivative;
 
@@ -104,10 +104,10 @@ Vector2d SimpleFluidDynamicActuator(const std::chrono::_V2::system_clock::time_p
     return state_derivative;
 };
 
-using ModelFunction = std::function<Vector2d(std::chrono::_V2::system_clock::time_point, const Vector2d &, double)>;
+using ModelFunction = std::function<Vector2d(const double, const Vector2d &, double)>;
 
 // TetrahedronActuatorAssembly function
-Matrix<double, 8, 1> TetrahedronActuatorAssembly(const std::chrono::_V2::system_clock::time_point time, const Matrix<double, 8, 1> &state, const Vector4d &control, ModelFunction model)
+Matrix<double, 8, 1> TetrahedronActuatorAssembly(const double time, const Matrix<double, 8, 1> &state, const Vector4d &control, ModelFunction model)
 {
     Matrix<double, 8, 1> state_derivative = Matrix<double, 8, 1>::Zero();
 
@@ -143,27 +143,9 @@ std::pair<Vector3d, Vector3d> TetrahedronActuatorAssemblyPropertyExtractor(
     return std::make_pair(b_angular_momentum, b_torque);
 }
 
-// ======
-// Defining a shorthand for the type of the mathematical state
-typedef std::vector<double> state_type;
-
-// System to be solved: dx/dt = -2 x
-void simple_fluid_dynamic_actuator(const state_type &x, state_type &dxdt, const double control, const double gain, const double time_constant)
-{
-    dxdt[0] = x[1] + gain / time_constant * control;
-    dxdt[1] = -x[1] / time_constant - gain / (time_constant * time_constant) * control;
-}
-
-// Observer, prints time and state when called (during integration)
-void my_observer(const state_type &x, const double t)
-{
-    std::cout << t << "   " << x[0] << "   " << x[1] << std::endl;
-}
-// ======
-
 int main()
 {
-    state_type x0 = {0.0, 0.0};
+    Vector2d x0 = {0.0, 0.0};
 
     // Integration parameters
     double t0 = 0.0;
@@ -174,19 +156,31 @@ int main()
     double time_constant = gain / 861.584e-6;
     double command = -0.23606797749979;
 
-    auto my_system = [&](const state_type &x, state_type &dxdt, const double t)
+    double final_angular_momentum = 0.0;
+
+    auto observer = [&](const Vector2d &x, const double t)
     {
-        simple_fluid_dynamic_actuator(x, dxdt, command, gain, time_constant);
+        final_angular_momentum = x[0];
+    };
+
+    auto my_system = [&](const Vector2d &x, Vector2d &dxdt, const double t)
+    {
+        // simple_fluid_dynamic_actuator(x, dxdt, command, gain, time_constant);
+        Vector2d state_derivative = SimpleFluidDynamicActuator(t, x, command, gain, time_constant);
+        dxdt[0] = state_derivative[0];
+        dxdt[1] = state_derivative[1];
     };
 
     // Define the error stepper
-    typedef odeint::runge_kutta_cash_karp54<state_type> error_stepper_rkck54;
+    typedef odeint::runge_kutta_cash_karp54<Vector2d> error_stepper_rkck54;
 
     // Error bounds
     double err_abs = 1.0e-10; // consider 1e-6
     double err_rel = 1.0e-6;  // consider 1e-3
 
-    odeint::integrate_adaptive(odeint::make_controlled(err_abs, err_rel, error_stepper_rkck54()), my_system, x0, t0, t1, dt, my_observer);
+    odeint::integrate_adaptive(odeint::make_controlled(err_abs, err_rel, error_stepper_rkck54()), my_system, x0, t0, t1, dt, observer);
+
+    std::cout << "Final angular momentum: " << final_angular_momentum << std::endl;
 
     // Create an instance of ConfigParser with the path to your config.json
     Config config(string(BUILD_OUTPUT_PATH) + "/config.json");
@@ -280,12 +274,12 @@ int main()
 
         double Ka = 120.236e-6;
         double Ta = Ka / 861.584e-6;
-        auto actuator = [&](const std::chrono::_V2::system_clock::time_point time, const Vector2d &actuator_state, double control) -> Vector2d
+        auto actuator = [&](const double time, const Vector2d &actuator_state, double control) -> Vector2d
         {
             return SimpleFluidDynamicActuator(time, actuator_state, control, Ka, Ta);
         };
 
-        auto actuator_assembly = [&](const std::chrono::_V2::system_clock::time_point time, const Matrix<double, 8, 1> &state, const Vector4d &command) -> Matrix<double, 8, 1>
+        auto actuator_assembly = [&](const double time, const Matrix<double, 8, 1> &state, const Vector4d &command) -> Matrix<double, 8, 1>
         {
             return TetrahedronActuatorAssembly(time, state, command, actuator);
         };
