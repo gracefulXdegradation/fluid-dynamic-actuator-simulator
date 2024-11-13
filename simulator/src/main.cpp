@@ -152,6 +152,16 @@ int main()
             q_nc[i] = q_ni[i] * q_ic[0];
         }
 
+        // ----- Commanded angular rates in commanded frame -----
+        // Two different commanded frames (nadir, target) used as reference
+        Matrix3Xd c_omega_c(3, date_times.size());
+        for (int i = 0; i < c_omega_c.cols(); i++)
+        {
+            c_omega_c.col(i) = access[i] == 1 ? t_omega_t.col(i) : n_omega_n.col(i);
+        }
+        // Commanded angular rates with respect to nadir frame
+        // n_omega_c = rotateframe(q_nc, c_omega_c')';
+
         // Save to file
         auto ts = DateTime::getCurrentTimestamp();
         DB::writematrix(m_i_r, "./output/" + ts, "i_r.csv");
