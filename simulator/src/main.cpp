@@ -174,6 +174,17 @@ int main()
             cos(gamma), cos(gamma), -cos(gamma), -cos(gamma);
         Eigen::MatrixXd inverse_actuator_alignment = actuator_alignment.completeOrthogonalDecomposition().pseudoInverse();
 
+        // ----- Initial states -----
+        // Spacecraft states
+        // Vector4d initial_attitude = q_ic[0].coeffs();
+        Vector3d initial_angular_rate = n_omega_n.col(0);
+        Eigen::Matrix<double, 8, 1> initial_actuator_state = Eigen::Matrix<double, 8, 1>::Zero();
+        Eigen::Matrix<double, 15, 1> initial_state;
+        initial_state << q_ic[0].w(), q_ic[0].x(), q_ic[0].y(), q_ic[0].z(), initial_angular_rate, initial_actuator_state;
+
+        std::cout << "initial_state:\n"
+                  << initial_state << std::endl;
+
         // Save to file
         auto ts = DateTime::getCurrentTimestamp();
         DB::writematrix(m_i_r, "./output/" + ts, "i_r.csv");
