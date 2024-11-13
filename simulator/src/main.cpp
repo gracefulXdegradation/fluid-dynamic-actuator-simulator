@@ -75,7 +75,10 @@ int main()
         auto [q_in, n_omega_n] = Frames::nadir_frame(m_i_r, m_i_v);
         auto [q_it, t_omega_t, i_r_gs, i_v_gs] = Frames::target_pointing_frame(m_i_r, m_i_v, config.getGroundStationPosition(), date_times);
 
-        auto [el, v] = visibility(m_i_r, i_r_gs, MathHelpers::deg2rad(config.getGroundStationElevation()));
+        auto [elevation, access] = visibility(m_i_r, i_r_gs, MathHelpers::deg2rad(config.getGroundStationElevation()));
+        auto distance = (i_r_gs - m_i_r).colwise().norm();
+
+        std::cout << distance.col(0) << std::endl;
 
         // Save to file
         auto ts = DateTime::getCurrentTimestamp();
