@@ -143,30 +143,23 @@ std::pair<Vector3d, Vector3d> TetrahedronActuatorAssemblyPropertyExtractor(
     return std::make_pair(b_angular_momentum, b_torque);
 }
 
-int main()
+double ActuatorCostFunction(
+    const ModelFunction &model,
+    const double time,
+    const Vector2d &initial_state,
+    double command,
+    double time_step,
+    double commanded_torque)
 {
-    Vector2d x0 = {0.0, 0.0};
-
-    // Integration parameters
-    double t0 = 0.0;
-    double t1 = 0.5;
-    double dt = 0.01;
-
-    double gain = 120.236e-6;
-    double time_constant = gain / 861.584e-6;
-    double command = -0.23606797749979;
-
     double final_angular_momentum = 0.0;
-
     auto observer = [&](const Vector2d &x, const double t)
     {
         final_angular_momentum = x[0];
     };
 
-    auto my_system = [&](const Vector2d &x, Vector2d &dxdt, const double t)
+    auto system = [&](const Vector2d &x, Vector2d &dxdt, const double t)
     {
-        // simple_fluid_dynamic_actuator(x, dxdt, command, gain, time_constant);
-        Vector2d state_derivative = SimpleFluidDynamicActuator(t, x, command, gain, time_constant);
+        Vector2d state_derivative = model(t, x, command);
         dxdt[0] = state_derivative[0];
         dxdt[1] = state_derivative[1];
     };
@@ -177,11 +170,21 @@ int main()
     // Error bounds
     double err_abs = 1.0e-10; // consider 1e-6
     double err_rel = 1.0e-6;  // consider 1e-3
+    double dt = 0.01;
 
-    odeint::integrate_adaptive(odeint::make_controlled(err_abs, err_rel, error_stepper_rkck54()), my_system, x0, t0, t1, dt, observer);
+    // there must be a better way to do it
+    Vector2d x0 = {initial_state[0], initial_state[1]};
 
-    std::cout << "Final angular momentum: " << final_angular_momentum << std::endl;
+    odeint::integrate_adaptive(odeint::make_controlled(err_abs, err_rel, error_stepper_rkck54()), system, x0, time, time + time_step, dt, observer);
 
+    double commanded_angular_momentum = initial_state[0] + commanded_torque * time_step;
+    double cost = (commanded_angular_momentum - final_angular_momentum) * (commanded_angular_momentum - final_angular_momentum);
+
+    return cost;
+}
+
+int main()
+{
     // Create an instance of ConfigParser with the path to your config.json
     Config config(string(BUILD_OUTPUT_PATH) + "/config.json");
 
@@ -289,6 +292,19 @@ int main()
         {
             return TetrahedronActuatorAssemblyPropertyExtractor(state, state_derivative, actuator_alignment);
         };
+
+        auto cost_function = [&](const double time, const Vector2d &initial_state, const double command, const double commanded_torque) -> double
+        {
+            // return ActuatorCostFunction(actuator, time, initial_state, command, config.getControlTimeStep() ,commanded_torque);
+            return ActuatorCostFunction(actuator, time, initial_state, command, 0.5, commanded_torque);
+        };
+
+        Vector2d x0 = {0.0, 0.0};
+        double command = -0.23606797749979;
+        double commanded_torque = 0.0;
+        auto cost = cost_function(0, x0, command, commanded_torque);
+
+        std::cout << "cost: " << cost << std::endl;
 
         // Save to file
         auto ts = DateTime::getCurrentTimestamp();
