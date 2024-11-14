@@ -8,9 +8,12 @@
 #include "OrbitalMechanics.h"
 #include "DB.hpp"
 #include <cmath>
+#include <boost/numeric/odeint.hpp>
+#include <boost/math/tools/minima.hpp>
 
 using namespace Eigen;
 using namespace std;
+namespace odeint = boost::numeric::odeint;
 
 // Checks whether combined contact criterion of access == 1 (satellite is
 // inside cone drawn by ground station FOV) and distance < 1.5e6 m
@@ -91,7 +94,7 @@ std::pair<VectorXd, VectorXi> visibility(const Matrix3Xd &i_r, const Matrix3Xd &
     return std::make_pair(el, v);
 }
 
-Vector2d SimpleFluidDynamicActuator(const std::chrono::_V2::system_clock::time_point time, const Vector2d &actuator_state, double control, double gain, double time_constant)
+Vector2d SimpleFluidDynamicActuator(const double time, const Vector2d &actuator_state, double control, double gain, double time_constant)
 {
     Vector2d state_derivative;
 
@@ -102,10 +105,10 @@ Vector2d SimpleFluidDynamicActuator(const std::chrono::_V2::system_clock::time_p
     return state_derivative;
 };
 
-using ModelFunction = std::function<Vector2d(std::chrono::_V2::system_clock::time_point, const Vector2d &, double)>;
+using ModelFunction = std::function<Vector2d(const double, const Vector2d &, double)>;
 
 // TetrahedronActuatorAssembly function
-Matrix<double, 8, 1> TetrahedronActuatorAssembly(const std::chrono::_V2::system_clock::time_point time, const Matrix<double, 8, 1> &state, const Vector4d &control, ModelFunction model)
+Matrix<double, 8, 1> TetrahedronActuatorAssembly(const double time, const Matrix<double, 8, 1> &state, const Vector4d &control, ModelFunction model)
 {
     Matrix<double, 8, 1> state_derivative = Matrix<double, 8, 1>::Zero();
 
@@ -140,6 +143,95 @@ std::pair<Vector3d, Vector3d> TetrahedronActuatorAssemblyPropertyExtractor(
 
     return std::make_pair(b_angular_momentum, b_torque);
 }
+
+double ActuatorCostFunction(
+    const ModelFunction &model,
+    const double time,
+    const Vector2d &initial_state,
+    double command,
+    double time_step,
+    double commanded_torque)
+{
+    double final_angular_momentum = 0.0;
+    auto observer = [&](const Vector2d &x, const double t)
+    {
+        final_angular_momentum = x[0];
+    };
+
+    auto system = [&](const Vector2d &x, Vector2d &dxdt, const double t)
+    {
+        Vector2d state_derivative = model(t, x, command);
+        dxdt[0] = state_derivative[0];
+        dxdt[1] = state_derivative[1];
+    };
+
+    // Define the error stepper
+    typedef odeint::runge_kutta_cash_karp54<Vector2d> error_stepper_rkck54;
+
+    // Error bounds
+    double err_abs = 1.0e-10; // consider 1e-6
+    double err_rel = 1.0e-6;  // consider 1e-3
+    double dt = 0.01;
+
+    // there must be a better way to do it
+    Vector2d x0 = {initial_state[0], initial_state[1]};
+
+    odeint::integrate_adaptive(odeint::make_controlled(err_abs, err_rel, error_stepper_rkck54()), system, x0, time, time + time_step, dt, observer);
+
+    double commanded_angular_momentum = initial_state[0] + commanded_torque * time_step;
+    double cost = (commanded_angular_momentum - final_angular_momentum) * (commanded_angular_momentum - final_angular_momentum);
+
+    return cost;
+}
+
+// function command = ActuatorControlValueFinder( ...
+//     cost_function, ...
+//     time, ...
+//     initial_state, ...
+//     required_torque, ...
+//     options, ...
+//     precision ...
+// )
+//     command = fminbnd( ...
+//         @(command) cost_function( ...
+//             time, ...
+//             initial_state, ...
+//             command, ...
+//             required_torque ...
+//         ), ...
+//         -1, ...
+//         1, ...
+//         options ...
+//     );
+//     command = round(command / precision) * precision;
+// end
+
+using CostFunction = std::function<double(const double, const Vector2d &, double, double)>;
+
+double ActuatorControlValueFinder(
+    const CostFunction &cost_function,
+    const double time,
+    const Vector2d &initial_state,
+    double required_torque,
+    double precision)
+{
+    auto cost_functor = [&](const double comm) -> double
+    {
+        return cost_function(time, initial_state, comm, required_torque);
+    };
+
+    double lower = -1.0;
+    double upper = 1.0;
+
+    // Specify the precision (e.g., 53 bits for double precision)
+    int bits = 53;
+
+    // Call Brent's minimization method
+    auto result = boost::math::tools::brent_find_minima(cost_functor, lower, upper, bits);
+    double command = result.first;
+
+    return std::round(command / precision) * precision;
+};
 
 int main()
 {
@@ -229,18 +321,20 @@ int main()
         Vector3d initial_angular_rate = n_omega_n.col(0);
         Matrix<double, 8, 1> initial_actuator_state = Matrix<double, 8, 1>::Zero();
         Matrix<double, 15, 1> initial_state;
+        // TODO there must be a better way to change representation of quaternions.
+        // Here, I am mimicing the MatLab's representation which is wxyz instead of xyzw used by Eigen
         initial_state << q_ic[0].w(), q_ic[0].x(), q_ic[0].y(), q_ic[0].z(), initial_angular_rate, initial_actuator_state;
 
         // ----- Fluid-dynamic actuator setup -----
 
         double Ka = 120.236e-6;
         double Ta = Ka / 861.584e-6;
-        auto actuator = [&](const std::chrono::_V2::system_clock::time_point time, const Vector2d &actuator_state, double control) -> Vector2d
+        auto actuator = [&](const double time, const Vector2d &actuator_state, double control) -> Vector2d
         {
             return SimpleFluidDynamicActuator(time, actuator_state, control, Ka, Ta);
         };
 
-        auto actuator_assembly = [&](const std::chrono::_V2::system_clock::time_point time, const Matrix<double, 8, 1> &state, const Vector4d &command) -> Matrix<double, 8, 1>
+        auto actuator_assembly = [&](const double time, const Matrix<double, 8, 1> &state, const Vector4d &command) -> Matrix<double, 8, 1>
         {
             return TetrahedronActuatorAssembly(time, state, command, actuator);
         };
@@ -250,6 +344,36 @@ int main()
         {
             return TetrahedronActuatorAssemblyPropertyExtractor(state, state_derivative, actuator_alignment);
         };
+
+        auto cost_function = [&](const double time, const Vector2d &initial_state, const double command, const double commanded_torque) -> double
+        {
+            return ActuatorCostFunction(actuator, time, initial_state, command, std::chrono::duration<double>(config.getControlTimeStep()).count(), commanded_torque);
+        };
+
+        // ===============
+
+        Vector2d x0 = {0.0, 0.0};
+        double command = -0.23606797749979;
+        double commanded_torque = 0.0;
+        auto cost = cost_function(0, x0, command, commanded_torque);
+
+        std::cout << "Cost: " << cost << std::endl;
+
+        // ===============
+
+        double precision = 1e-2;
+
+        double cost_time = 0.0;
+        double req_torque = 2.55105652012911e-05;
+
+        auto command_finder = [&](const double time, const Vector2d &initial_state, const double required_torque) -> double
+        {
+            return ActuatorControlValueFinder(cost_function, time, initial_state, required_torque, precision);
+        };
+
+        std::cout << "Minimal value found: " << command_finder(cost_time, x0, req_torque) << std::endl;
+
+        // ===============
 
         // Save to file
         auto ts = DateTime::getCurrentTimestamp();

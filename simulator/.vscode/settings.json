@@ -67,6 +67,16 @@
     "span": "cpp",
     "core": "cpp",
     "geometry": "cpp",
-    "dense": "cpp"
+    "dense": "cpp",
+    "filesystem": "cpp",
+    "strstream": "cpp",
+    "bitset": "cpp",
+    "condition_variable": "cpp",
+    "list": "cpp",
+    "mutex": "cpp",
+    "cfenv": "cpp",
+    "cinttypes": "cpp",
+    "typeindex": "cpp",
+    "variant": "cpp"
   }
 }

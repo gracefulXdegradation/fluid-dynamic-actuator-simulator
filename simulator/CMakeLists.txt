@@ -22,9 +22,12 @@ file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 include_directories(${EIGEN3_INCLUDE_DIR})
 
+find_package(Boost 1.45.0 COMPONENTS odeint system chrono math) 
+include_directories(${Boost_INCLUDE_DIRS})
+
 # Define the executable target
 add_executable(${PROJECT_NAME} ${SOURCES})
-target_link_libraries(${PROJECT_NAME} Eigen3::Eigen)
+target_link_libraries(${PROJECT_NAME} Eigen3::Eigen ${Boost_LIBRARIES})
 
 # Copy resource files to the output directory after build
 set(RESOURCE_FILES
