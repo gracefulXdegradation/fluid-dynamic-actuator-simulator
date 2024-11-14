@@ -117,3 +117,4 @@ print(eci_velocity) # [-134.8406056  -249.53731679    0.31331844]
 ## Useful stuffs
 
 [Numerical integration in C++ with Boost odeint](http://boccelliengineering.altervista.org/junk/boost_integration/boost_odeint.html)
+[One Dimensional Optimization Problems](https://indrag49.github.io/Numerical-Optimization/solving-one-dimensional-optimization-problems.html)

@@ -9,6 +9,7 @@
 #include "DB.hpp"
 #include <cmath>
 #include <boost/numeric/odeint.hpp>
+#include <boost/math/tools/minima.hpp>
 
 using namespace Eigen;
 using namespace std;
@@ -183,8 +184,28 @@ double ActuatorCostFunction(
     return cost;
 }
 
+double example_function(double x)
+{
+    return std::pow(x - 2.0, 2); // Example function with a minimum at x = 2
+}
+
 int main()
 {
+    // Define the interval [a, b]
+    double lower = 0.0;
+    double upper = 4.0;
+
+    // Specify the precision (e.g., 53 bits for double precision)
+    int bits = 53;
+
+    // Call Brent's minimization method
+    auto result = boost::math::tools::brent_find_minima(example_function, lower, upper, bits);
+
+    // Output the results
+    std::cout << "Minimum location: " << result.first << "\n";
+    std::cout << "Function value at minimum: " << result.second << "\n";
+    // ============
+
     // Create an instance of ConfigParser with the path to your config.json
     Config config(string(BUILD_OUTPUT_PATH) + "/config.json");
 

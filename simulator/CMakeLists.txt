@@ -22,7 +22,7 @@ file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 include_directories(${EIGEN3_INCLUDE_DIR})
 
-find_package(Boost 1.45.0 COMPONENTS odeint system chrono) 
+find_package(Boost 1.45.0 COMPONENTS odeint system chrono math) 
 include_directories(${Boost_INCLUDE_DIRS})
 
 # Define the executable target
