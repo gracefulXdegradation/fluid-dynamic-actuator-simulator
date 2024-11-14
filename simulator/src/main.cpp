@@ -271,6 +271,8 @@ int main()
         Vector3d initial_angular_rate = n_omega_n.col(0);
         Matrix<double, 8, 1> initial_actuator_state = Matrix<double, 8, 1>::Zero();
         Matrix<double, 15, 1> initial_state;
+        // TODO there must be a better way to change representation of quaternions.
+        // Here, I am mimicing the MatLab's representation which is wxyz instead of xyzw used by Eigen
         initial_state << q_ic[0].w(), q_ic[0].x(), q_ic[0].y(), q_ic[0].z(), initial_angular_rate, initial_actuator_state;
 
         // ----- Fluid-dynamic actuator setup -----
@@ -295,8 +297,7 @@ int main()
 
         auto cost_function = [&](const double time, const Vector2d &initial_state, const double command, const double commanded_torque) -> double
         {
-            // return ActuatorCostFunction(actuator, time, initial_state, command, config.getControlTimeStep() ,commanded_torque);
-            return ActuatorCostFunction(actuator, time, initial_state, command, 0.5, commanded_torque);
+            return ActuatorCostFunction(actuator, time, initial_state, command, std::chrono::duration<double>(config.getControlTimeStep()).count(), commanded_torque);
         };
 
         Vector2d x0 = {0.0, 0.0};
