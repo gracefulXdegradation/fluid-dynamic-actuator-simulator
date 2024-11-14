@@ -184,28 +184,57 @@ double ActuatorCostFunction(
     return cost;
 }
 
-double example_function(double x)
-{
-    return std::pow(x - 2.0, 2); // Example function with a minimum at x = 2
-}
+// function command = ActuatorControlValueFinder( ...
+//     cost_function, ...
+//     time, ...
+//     initial_state, ...
+//     required_torque, ...
+//     options, ...
+//     precision ...
+// )
+//     command = fminbnd( ...
+//         @(command) cost_function( ...
+//             time, ...
+//             initial_state, ...
+//             command, ...
+//             required_torque ...
+//         ), ...
+//         -1, ...
+//         1, ...
+//         options ...
+//     );
+//     command = round(command / precision) * precision;
+// end
 
-int main()
+using CostFunction = std::function<double(const double, const Vector2d &, double, double)>;
+
+double ActuatorControlValueFinder(
+    const CostFunction &cost_function,
+    const double time,
+    const Vector2d &initial_state,
+    double required_torque,
+    double precision)
 {
-    // Define the interval [a, b]
-    double lower = 0.0;
-    double upper = 4.0;
+    auto cost_functor = [&](const double comm) -> double
+    {
+        return cost_function(time, initial_state, comm, required_torque);
+    };
+
+    double lower = -1.0;
+    double upper = 1.0;
 
     // Specify the precision (e.g., 53 bits for double precision)
     int bits = 53;
 
     // Call Brent's minimization method
-    auto result = boost::math::tools::brent_find_minima(example_function, lower, upper, bits);
+    auto result = boost::math::tools::brent_find_minima(cost_functor, lower, upper, bits);
+    double command = result.first;
 
-    // Output the results
-    std::cout << "Minimum location: " << result.first << "\n";
-    std::cout << "Function value at minimum: " << result.second << "\n";
-    // ============
+    return std::round(command / precision) * precision;
+};
 
+int main()
+{
     // Create an instance of ConfigParser with the path to your config.json
     Config config(string(BUILD_OUTPUT_PATH) + "/config.json");
 
@@ -321,12 +350,30 @@ int main()
             return ActuatorCostFunction(actuator, time, initial_state, command, std::chrono::duration<double>(config.getControlTimeStep()).count(), commanded_torque);
         };
 
+        // ===============
+
         Vector2d x0 = {0.0, 0.0};
         double command = -0.23606797749979;
         double commanded_torque = 0.0;
         auto cost = cost_function(0, x0, command, commanded_torque);
 
-        std::cout << "cost: " << cost << std::endl;
+        std::cout << "Cost: " << cost << std::endl;
+
+        // ===============
+
+        double precision = 1e-2;
+
+        double cost_time = 0.0;
+        double req_torque = 2.55105652012911e-05;
+
+        auto command_finder = [&](const double time, const Vector2d &initial_state, const double required_torque) -> double
+        {
+            return ActuatorControlValueFinder(cost_function, time, initial_state, required_torque, precision);
+        };
+
+        std::cout << "Minimal value found: " << command_finder(cost_time, x0, req_torque) << std::endl;
+
+        // ===============
 
         // Save to file
         auto ts = DateTime::getCurrentTimestamp();
