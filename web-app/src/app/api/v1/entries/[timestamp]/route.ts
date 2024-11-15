@@ -30,11 +30,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ time
   const {timestamp} = await params;
 
   try {
-    const radiusVectors = await parseCSV(path.join('/data/fds', timestamp, `i_r.csv`));
-    const velocityVectors = await parseCSV(path.join('/data/fds', timestamp, `i_v.csv`));
+    // const radiusVectors = await parseCSV(path.join('/data/fds', timestamp, `i_r.csv`));
+    // const velocityVectors = await parseCSV(path.join('/data/fds', timestamp, `i_v.csv`));
     const t = await parseCSV(path.join('/data/fds', timestamp, `t.csv`));
+    const distance = await parseCSV(path.join('/data/fds', timestamp, `distance.csv`));
 
-    return Response.json({r: radiusVectors, v: velocityVectors, t});
+    return Response.json({
+      // r: radiusVectors,
+      // v: velocityVectors,
+      t,
+      d: distance});
   } catch (error) {
     console.error('Error reading file:', error);
     return new Response(`Path does not exist: ${timestamp}/${filename}`, {
