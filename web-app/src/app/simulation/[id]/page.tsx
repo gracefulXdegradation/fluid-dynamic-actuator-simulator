@@ -5,7 +5,13 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 
 const colors = ["#8884d8", "#82ca9d", "#ffa600", "#ff6361"];
 
+const rad2deg = (rad: number) => rad * 180 / Math.PI;
+
 interface Data {
+  ang_mom_body_frame: number[][];
+  a_control_torque: number[][];
+  a_command: number[][];
+  state: number[][];
   d: number[][];
   t: number[][];
 }
@@ -46,9 +52,16 @@ const SimulationPage = () => {
   }
 
   // Prepare data for plotting
-  const { t, a_control_torque, d } = data;
+  const { t, a_control_torque, a_command, ang_mom_body_frame, state, d } = data;
 
+  
+  const angularRate = state.slice(4,7).map((data: number[]) => data.map(rad => rad2deg(rad)));
+  const angularRateAbs = angularRate[0].map((_, i) => Math.pow(angularRate[0][i], 2) + Math.pow(angularRate[1][i], 2) + Math.pow(angularRate[2][i],2) )
+  const angularMomentum = [7, 9, 11 ,13].map(i => state[i]);
   const ts = t[0];
+  
+  // window.angularRate = angularRate;
+  // window.angularRateAbs = angularRateAbs;
 
   const formatDataForChart = (vectorData: { name: string; data: number[] }[], timestamps: number[]) => {
     const data = timestamps.reduce((acc, ti, index) => {
@@ -94,6 +107,59 @@ const SimulationPage = () => {
     data: a_control_torque[3]
   }], ts);
 
+  const commandTorqueData = formatDataForChart([{
+    name: 'Tau1',
+    data: a_command[0]
+  }, {
+    name: 'Tau2',
+    data: a_command[1]
+  }, {
+    name: 'Tau3',
+    data: a_command[2]
+  }, {
+    name: 'Tau4',
+    data: a_command[3]
+  }], ts);
+
+  const angularRateData = formatDataForChart([{
+    name: 'Omega x',
+    data: angularRate[0]
+  }, {
+    name: 'Omega y',
+    data: angularRate[1]
+  }, {
+    name: 'Omega z',
+    data: angularRate[2]
+  }, {
+    name: '|Omega|',
+    data: angularRateAbs
+  }], ts);
+
+  const angularMomentumData = formatDataForChart([{
+    name: 'h1',
+    data: angularMomentum[0]
+  }, {
+    name: 'h2',
+    data: angularMomentum[1]
+  }, {
+    name: 'h3',
+    data: angularMomentum[2]
+  }, {
+    name: 'h4',
+    data: angularMomentum[3]
+  }], ts);
+
+  const angularMomentumBodyFrameData = formatDataForChart([{
+    name: 'h_x',
+    data: ang_mom_body_frame[0]
+  }, {
+    name: 'h_y',
+    data: ang_mom_body_frame[1]
+  }, {
+    name: 'h_z',
+    data: ang_mom_body_frame[2]
+  }], ts);
+
   return (
     <div>
       <h1>Simulation {id}</h1>
@@ -113,6 +179,51 @@ const SimulationPage = () => {
         </ResponsiveContainer>
       </div>
       <div>
+        <h2>Body angular rate w.r.t. body frame</h2>
+        <ResponsiveContainer width="50%" height={400}>
+          <LineChart data={angularRateData.data}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.5} />
+            <XAxis dataKey="timestamp" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            {angularRateData.meta.map(({key, stroke}) => (
+              <Line type="monotone" key={key} dataKey={key} stroke={stroke} />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <div>
+        <h2>Actuator angular momentum in actuator frame</h2>
+        <ResponsiveContainer width="50%" height={400}>
+          <LineChart data={angularMomentumData.data}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.5} />
+            <XAxis dataKey="timestamp" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            {angularMomentumData.meta.map(({key, stroke}) => (
+              <Line type="monotone" key={key} dataKey={key} stroke={stroke} />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <div>
+        <h2>Actuator angular momentum in body frame</h2>
+        <ResponsiveContainer width="50%" height={400}>
+          <LineChart data={angularMomentumBodyFrameData.data}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.5} />
+            <XAxis dataKey="timestamp" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            {angularMomentumBodyFrameData.meta.map(({key, stroke}) => (
+              <Line type="monotone" key={key} dataKey={key} stroke={stroke} />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <div>
         <h2>Distance</h2>
         <ResponsiveContainer width="50%" height={400}>
           <LineChart data={distanceChartData.data}>
@@ -122,6 +233,21 @@ const SimulationPage = () => {
             <Tooltip />
             <Legend />
             {distanceChartData.meta.map(({key, stroke}) => (
+              <Line type="monotone" key={key} dataKey={key} stroke={stroke} />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <div>
+        <h2>Actuator commands</h2>
+        <ResponsiveContainer width="50%" height={400}>
+          <LineChart data={commandTorqueData.data}>
+            <CartesianGrid strokeDasharray="5 5" opacity={0.5} />
+            <XAxis dataKey="timestamp" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            {commandTorqueData.meta.map(({key, stroke}) => (
               <Line type="monotone" key={key} dataKey={key} stroke={stroke} />
             ))}
           </LineChart>

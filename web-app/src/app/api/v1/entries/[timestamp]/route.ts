@@ -31,13 +31,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ time
 
   try {
     const a_control_torque = await parseCSV(path.join('/data/fds', timestamp, `a_control_torque.csv`));
-    // const velocityVectors = await parseCSV(path.join('/data/fds', timestamp, `i_v.csv`));
+    const ang_mom_body_frame = await parseCSV(path.join('/data/fds', timestamp, `ang_mom_body_frame.csv`));
+    const a_command = await parseCSV(path.join('/data/fds', timestamp, `a_command.csv`));
+    const state = await parseCSV(path.join('/data/fds', timestamp, `state.csv`));
     const t = await parseCSV(path.join('/data/fds', timestamp, `t.csv`));
     const distance = await parseCSV(path.join('/data/fds', timestamp, `distance.csv`));
 
     return Response.json({
+      ang_mom_body_frame,
       a_control_torque,
-      // v: velocityVectors,
+      a_command,
+      state,
       t,
       d: distance});
   } catch (error) {
