@@ -4,7 +4,7 @@
 	"service": "web-app",
 	"shutdownAction": "none",
 	"workspaceFolder": "/workspace/web-app",
-	"updateContentCommand": "npm install",
+	"postCreateCommand": "npm install",
 	"postAttachCommand": "npm run dev",
 	"customizations": {
 		"vscode": {
