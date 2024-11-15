@@ -488,10 +488,29 @@ int main()
         }
         std::cout << "Simulation complete!" << std::endl;
 
+        // Get angular momentum of actuator assembly in the body frame
+        std::vector<int> indices = {7, 9, 11, 13};
+        MatrixXd selected_rows(indices.size(), state.cols());
+        for (size_t i = 0; i < indices.size(); ++i)
+        {
+            selected_rows.row(i) = state.row(indices[i]);
+        }
+        auto ang_mom_body_frame = actuator_alignment * selected_rows;
+
+        // Euler's angles
+        Matrix3Xd euler_angles(3, q_bc.size());
+        for (int i = 0; i < q_bc.size(); i++)
+        {
+            q_bc[i].normalize();
+            // Extract Euler angles in 'zxz' sequence
+            // Note: The order 'zxz' corresponds to 2, 0, 2 in Eigen's eulerAngles
+            euler_angles.col(i) = q_bc[i].toRotationMatrix().eulerAngles(2, 0, 2);
+        }
+
         // Save to file
         auto ts = DateTime::getCurrentTimestamp();
-        DB::writematrix(m_i_r, "./output/" + ts, "i_r.csv");
-        DB::writematrix(m_i_v, "./output/" + ts, "i_v.csv");
+        DB::writematrix(euler_angles, "./output/" + ts, "euler_angles.csv");
+        DB::writematrix(ang_mom_body_frame, "./output/" + ts, "ang_mom_body_frame.csv");
         DB::writematrix(a_control_torque * 1e3, "./output/" + ts, "a_control_torque.csv");
         DB::writematrix(a_command, "./output/" + ts, "a_command.csv");
         DB::writematrix(state, "./output/" + ts, "state.csv");
