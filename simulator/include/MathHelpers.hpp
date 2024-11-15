@@ -11,6 +11,11 @@ using namespace std;
 
 namespace MathHelpers
 {
+  inline int signum(double x)
+  {
+    return x >= 0.0 ? 1 : -1;
+  }
+
   inline Vector3d normalizeVector(const Vector3d &vec)
   {
     return vec / vec.norm();

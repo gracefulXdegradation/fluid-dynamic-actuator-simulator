@@ -123,6 +123,8 @@ Matrix<double, 8, 1> TetrahedronActuatorAssembly(const double time, const Matrix
     return state_derivative;
 }
 
+using TetrahedronActuatorAssemblyStateExtractorFunction = std::function<Matrix<double, 8, 1>(const Matrix<double, 15, 1> &)>;
+
 Matrix<double, 8, 1> TetrahedronActuatorAssemblyStateExtractor(const Matrix<double, 15, 1> &state)
 {
     return state.segment(7, 8);
@@ -184,28 +186,6 @@ double ActuatorCostFunction(
     return cost;
 }
 
-// function command = ActuatorControlValueFinder( ...
-//     cost_function, ...
-//     time, ...
-//     initial_state, ...
-//     required_torque, ...
-//     options, ...
-//     precision ...
-// )
-//     command = fminbnd( ...
-//         @(command) cost_function( ...
-//             time, ...
-//             initial_state, ...
-//             command, ...
-//             required_torque ...
-//         ), ...
-//         -1, ...
-//         1, ...
-//         options ...
-//     );
-//     command = round(command / precision) * precision;
-// end
-
 using CostFunction = std::function<double(const double, const Vector2d &, double, double)>;
 
 double ActuatorControlValueFinder(
@@ -231,6 +211,62 @@ double ActuatorControlValueFinder(
     double command = result.first;
 
     return std::round(command / precision) * precision;
+};
+
+/**
+ * RHS represents a customizable spacecraft
+ * STATE_DERIVATIVE = RHS(TIME, STATE, ACTUATOR_STATE_EXTRACTOR,
+ * ACTUATORS, ACTUATOR_PROPERTY_EXTRACTOR, INERTIA, INERTIAL_POSITION) defines
+ * the kinematics and dynamics equations of a spacecraft with a rigid body with
+ * INERTIA, where the STATE consists in any case of the attitude quaternion
+ * and the angular rate vector of the rigid body. ACTUATOR_STATE_EXTRACTOR,
+ * ACTUATORS, and ACTUATOR_PROPERTY_EXTRACTOR allow to inject variable
+ * momentum exchange actuator models into the right-hand side function.
+ */
+Matrix<double, 15, 1> rhs(
+    const int time,
+    const Matrix<double, 15, 1> &state,
+    const Vector4d &control,
+    TetrahedronActuatorAssemblyStateExtractorFunction actuator_assembly_state_extractor,
+    std::function<Matrix<double, 8, 1>(const double, const Matrix<double, 8, 1> &, const Vector4d &)> actuators,
+    std::function<std::pair<Vector3d, Vector3d>(const Matrix<double, 8, 1> &,
+                                                const Matrix<double, 8, 1> &)>
+        actuator_property_extractor,
+    const Matrix3d &inertia,
+    const Vector3d &inertial_position)
+{
+    // Decompose state vector
+    Vector4d attitude = state.segment(0, 4);
+    Vector3d angular_rate = state.segment(4, 3);
+    Matrix<double, 8, 1> actuator_state = actuator_assembly_state_extractor(state);
+
+    // Get actuator state derivative from function given by input 'actuators'
+    Matrix<double, 8, 1> actuator_state_derivative = actuators(time, actuator_state, control);
+
+    // Extract actuator properties in body frame
+    auto [actuator_angular_momentum, actuator_torque] = actuator_property_extractor(actuator_state, actuator_state_derivative);
+
+    // Dynamics equation
+    auto angular_rate_derivative = inertia.colPivHouseholderQr().solve(-actuator_torque - angular_rate.cross(inertia * angular_rate + actuator_angular_momentum));
+
+    // Kinematics equation
+    Matrix3d A_lin_dot;
+    A_lin_dot << 0.0, angular_rate(2), -angular_rate(1),
+        -angular_rate(2), 0.0, angular_rate(0),
+        angular_rate(1), -angular_rate(0), 0.0;
+
+    Matrix4d a;
+    a(0, 0) = 0.0;
+    a.block<1, 3>(0, 1) = -angular_rate.transpose();
+    a.block<3, 1>(1, 0) = angular_rate;
+    a.block<3, 3>(1, 1) = A_lin_dot;
+    auto attitude_derivative = 0.5 * a * attitude;
+
+    // Construct state derivative
+    Matrix<double, 15, 1> state_derivative;
+    state_derivative << attitude_derivative, angular_rate_derivative, actuator_state_derivative;
+
+    return state_derivative;
 };
 
 int main()
@@ -340,7 +376,7 @@ int main()
         };
 
         auto actuator_property_extractor = [&](const Matrix<double, 8, 1> &state,
-                                               const Matrix<double, 8, 1> &state_derivative)
+                                               const Matrix<double, 8, 1> &state_derivative) -> std::pair<Vector3d, Vector3d>
         {
             return TetrahedronActuatorAssemblyPropertyExtractor(state, state_derivative, actuator_alignment);
         };
@@ -350,35 +386,116 @@ int main()
             return ActuatorCostFunction(actuator, time, initial_state, command, std::chrono::duration<double>(config.getControlTimeStep()).count(), commanded_torque);
         };
 
-        // ===============
-
-        Vector2d x0 = {0.0, 0.0};
-        double command = -0.23606797749979;
-        double commanded_torque = 0.0;
-        auto cost = cost_function(0, x0, command, commanded_torque);
-
-        std::cout << "Cost: " << cost << std::endl;
-
-        // ===============
-
         double precision = 1e-2;
 
-        double cost_time = 0.0;
-        double req_torque = 2.55105652012911e-05;
-
-        auto command_finder = [&](const double time, const Vector2d &initial_state, const double required_torque) -> double
+        auto command_finder = [&](const double time, const Vector2d &state0, const double required_torque) -> double
         {
-            return ActuatorControlValueFinder(cost_function, time, initial_state, required_torque, precision);
+            return ActuatorControlValueFinder(cost_function, time, state0, required_torque, precision);
         };
 
-        std::cout << "Minimal value found: " << command_finder(cost_time, x0, req_torque) << std::endl;
+        // Control
 
-        // ===============
+        // ----- Boundary conditions -----
+        // Initial states
+
+        MatrixXd state(initial_state.rows(), date_times.size());
+        for (int i = 0; i < date_times.size(); ++i)
+        {
+            state.col(i) = initial_state;
+        }
+
+        std::chrono::_V2::system_clock::time_point precision_date_times = date_times[0];
+        Matrix<double, 15, 1> precision_state = state.col(0);
+
+        Matrix3d Kp = 1 * inertia;
+        Matrix3d Kd = 3 * Kp;
+
+        Matrix3Xd b_omega_d(3, date_times.size());
+        Matrix4Xd a_control_torque(4, date_times.size());
+        Matrix3Xd b_control_torque(3, date_times.size());
+        Matrix4Xd a_command(4, date_times.size());
+        std::vector<Quaterniond> q_bc(date_times.size());
+        for (int i = 0; i < date_times.size() - 1; i++)
+        {
+            // ----- Control error -----
+            // Error quaternion
+            Vector4d q_bc_coef = state.col(i).segment(0, 4);
+            Quaterniond q_bc_(q_bc_coef[0], q_bc_coef[1], q_bc_coef[2], q_bc_coef[3]);
+            q_bc[i] = q_bc_.conjugate() * q_ic[i];
+            // Angular rate error
+            b_omega_d.col(i) = q_bc[i] * c_omega_c.col(i) - state.col(i).segment(4, 3);
+            // ----- PD control law -----
+            // Control input
+            double qs = q_bc[i].w();
+            Vector3d qv = {q_bc[i].x(), q_bc[i].y(), q_bc[i].z()};
+            b_control_torque.col(i) = -1 * (Kp * MathHelpers::signum(qs) * qv + Kd * b_omega_d.col(i));
+            //  ----- Distribute control input to actuators -----
+            a_control_torque.col(i) = inverse_actuator_alignment * b_control_torque.col(i);
+            Matrix<double, 2, 4> actuator_state = TetrahedronActuatorAssemblyStateExtractor(state.col(i)).reshaped(2, 4);
+
+            //  ----- Calculate the command to the actuator assembly -----
+            for (int j = 0; j < 4; j++)
+            {
+                a_command(j, i) = command_finder(0.0, actuator_state.col(j), a_control_torque(j, i));
+            }
+
+            // ----- Dynamics and kinematics equation within rhs function -----
+            // Solve differential equations for next time point or span
+
+            std::vector<Matrix<double, 15, 1>> integrated_states;
+            std::vector<double> integrated_time_steps;
+            auto observer = [&](const Matrix<double, 15, 1> &x, const double t)
+            {
+                integrated_states.push_back(x);
+                integrated_time_steps.push_back(t);
+            };
+
+            auto system = [&](const Matrix<double, 15, 1> &x, Matrix<double, 15, 1> &dxdt, const double t)
+            {
+                Matrix<double, 15, 1> state_derivative = rhs(t, x, a_command.col(i), TetrahedronActuatorAssemblyStateExtractor, actuator_assembly, actuator_property_extractor, inertia, m_i_r.col(i));
+                dxdt.col(0) = state_derivative.col(0);
+            };
+
+            // ----- Solve with higher frequency than control cycle -----
+            double t0 = std::chrono::duration_cast<std::chrono::milliseconds>(date_times[i].time_since_epoch()).count() / 1000.0;
+            double t1 = std::chrono::duration_cast<std::chrono::milliseconds>(date_times[i + 1].time_since_epoch()).count() / 1000.0;
+            double dt = (t1 - t0) / 11;
+
+            Matrix<double, 15, 1> x0 = state.col(i);
+
+            odeint::integrate_const(odeint::runge_kutta4<Matrix<double, 15, 1>>(), system, x0, t0, t1, dt, observer);
+            state.col(i + 1) = integrated_states.back();
+        }
+
+        // Calculate the Final State
+        int last_index = date_times.size() - 1;
+        // ----- Control error -----
+        Vector4d q_bc_coef = state.col(last_index).segment(0, 4);
+        Quaterniond q_bc_(q_bc_coef[0], q_bc_coef[1], q_bc_coef[2], q_bc_coef[3]);
+        q_bc[last_index] = q_bc_.conjugate() * q_ic[last_index];
+        b_omega_d.col(last_index) = q_bc[last_index] * c_omega_c.col(last_index) - state.col(last_index).segment(4, 3);
+        // ----- PD control law -----
+        double qs = q_bc[last_index].w();
+        Vector3d qv = {q_bc[last_index].x(), q_bc[last_index].y(), q_bc[last_index].z()};
+        b_control_torque.col(last_index) = -1 * (Kp * MathHelpers::signum(qs) * qv + Kd * b_omega_d.col(last_index));
+        //  ----- Distribute control input to actuators -----
+        a_control_torque.col(last_index) = inverse_actuator_alignment * b_control_torque.col(last_index);
+        Matrix<double, 2, 4> actuator_state = TetrahedronActuatorAssemblyStateExtractor(state.col(last_index)).reshaped(2, 4);
+        // ----- Calculate the command to the actuator assembly -----
+        for (int j = 0; j < 4; j++)
+        {
+            a_command(j, last_index) = command_finder(0.0, actuator_state.col(j), a_control_torque(j, last_index));
+        }
+        std::cout << "Simulation complete!" << std::endl;
 
         // Save to file
         auto ts = DateTime::getCurrentTimestamp();
         DB::writematrix(m_i_r, "./output/" + ts, "i_r.csv");
         DB::writematrix(m_i_v, "./output/" + ts, "i_v.csv");
+        DB::writematrix(a_control_torque * 1e3, "./output/" + ts, "a_control_torque.csv");
+        DB::writematrix(a_command, "./output/" + ts, "a_command.csv");
+        DB::writematrix(state, "./output/" + ts, "state.csv");
+        DB::writematrix(distance, "./output/" + ts, "distance.csv");
         DB::serializeTimePointsToCSV(date_times, "./output/" + ts, "t.csv");
 
         std::cout << "Data saved to output.txt" << std::endl;
