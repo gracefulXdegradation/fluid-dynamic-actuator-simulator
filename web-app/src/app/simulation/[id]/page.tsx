@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
+const colors = ["#8884d8", "#82ca9d", "#ffa600", "#ff6361"];
+
 interface Data {
   d: number[][];
   t: number[][];
@@ -66,12 +68,16 @@ const SimulationPage = () => {
 
     return {
       data,
-      keys: vectorData.map(v => v.name)
+      meta: vectorData.map((v, i) => ({
+        key: v.name,
+        stroke: v.stroke || colors[i]
+      }))
     };
   };
 
   const distanceChartData = formatDataForChart([{
-    name: 'Distance', data: d[0]
+    name: 'Distance',
+    data: d[0]
   }], ts);
 
   const controlTorqueData = formatDataForChart([{
@@ -95,13 +101,13 @@ const SimulationPage = () => {
         <h2>Required control torque</h2>
         <ResponsiveContainer width="50%" height={400}>
           <LineChart data={controlTorqueData.data}>
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" opacity={0.5} />
             <XAxis dataKey="timestamp" />
             <YAxis />
             <Tooltip />
             <Legend />
-            {controlTorqueData.keys.map((key) => (
-              <Line key={key} type="monotone" dataKey={key} stroke="#8884d8" />
+            {controlTorqueData.meta.map(({key, stroke}) => (
+              <Line type="monotone" key={key} dataKey={key} stroke={stroke} />
             ))}
           </LineChart>
         </ResponsiveContainer>
@@ -110,13 +116,13 @@ const SimulationPage = () => {
         <h2>Distance</h2>
         <ResponsiveContainer width="50%" height={400}>
           <LineChart data={distanceChartData.data}>
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="5 5" opacity={0.5} />
             <XAxis dataKey="timestamp" />
             <YAxis />
             <Tooltip />
             <Legend />
-            {distanceChartData.keys.map((key) => (
-              <Line type="monotone" key={key} dataKey={key} stroke="#82ca9d" />
+            {distanceChartData.meta.map(({key, stroke}) => (
+              <Line type="monotone" key={key} dataKey={key} stroke={stroke} />
             ))}
           </LineChart>
         </ResponsiveContainer>
