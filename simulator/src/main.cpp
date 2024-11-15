@@ -497,8 +497,19 @@ int main()
         }
         auto ang_mom_body_frame = actuator_alignment * selected_rows;
 
+        // Euler's angles
+        Matrix3Xd euler_angles(3, q_bc.size());
+        for (int i = 0; i < q_bc.size(); i++)
+        {
+            q_bc[i].normalize();
+            // Extract Euler angles in 'zxz' sequence
+            // Note: The order 'zxz' corresponds to 2, 0, 2 in Eigen's eulerAngles
+            euler_angles.col(i) = q_bc[i].toRotationMatrix().eulerAngles(2, 0, 2);
+        }
+
         // Save to file
         auto ts = DateTime::getCurrentTimestamp();
+        DB::writematrix(euler_angles, "./output/" + ts, "euler_angles.csv");
         DB::writematrix(ang_mom_body_frame, "./output/" + ts, "ang_mom_body_frame.csv");
         DB::writematrix(a_control_torque * 1e3, "./output/" + ts, "a_control_torque.csv");
         DB::writematrix(a_command, "./output/" + ts, "a_command.csv");

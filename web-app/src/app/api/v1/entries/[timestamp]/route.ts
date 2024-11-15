@@ -30,6 +30,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ time
   const {timestamp} = await params;
 
   try {
+    const euler_angles = await parseCSV(path.join('/data/fds', timestamp, `euler_angles.csv`));
     const a_control_torque = await parseCSV(path.join('/data/fds', timestamp, `a_control_torque.csv`));
     const ang_mom_body_frame = await parseCSV(path.join('/data/fds', timestamp, `ang_mom_body_frame.csv`));
     const a_command = await parseCSV(path.join('/data/fds', timestamp, `a_command.csv`));
@@ -38,6 +39,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ time
     const distance = await parseCSV(path.join('/data/fds', timestamp, `distance.csv`));
 
     return Response.json({
+      euler_angles,
       ang_mom_body_frame,
       a_control_torque,
       a_command,

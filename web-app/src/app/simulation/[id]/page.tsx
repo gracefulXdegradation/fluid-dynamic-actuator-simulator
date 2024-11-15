@@ -8,6 +8,7 @@ const colors = ["#8884d8", "#82ca9d", "#ffa600", "#ff6361"];
 const rad2deg = (rad: number) => rad * 180 / Math.PI;
 
 interface Data {
+  euler_angles: number[][];
   ang_mom_body_frame: number[][];
   a_control_torque: number[][];
   a_command: number[][];
@@ -52,10 +53,10 @@ const SimulationPage = () => {
   }
 
   // Prepare data for plotting
-  const { t, a_control_torque, a_command, ang_mom_body_frame, state, d } = data;
+  const { t, a_control_torque, a_command, ang_mom_body_frame, euler_angles, state, d } = data;
 
   
-  const angularRate = state.slice(4,7).map((data: number[]) => data.map(rad => rad2deg(rad)));
+  const angularRate = state.slice(4,7).map((data: number[]) => data.map(rad2deg));
   const angularRateAbs = angularRate[0].map((_, i) => Math.pow(angularRate[0][i], 2) + Math.pow(angularRate[1][i], 2) + Math.pow(angularRate[2][i],2) )
   const angularMomentum = [7, 9, 11 ,13].map(i => state[i]);
   const ts = t[0];
@@ -108,16 +109,16 @@ const SimulationPage = () => {
   }], ts);
 
   const commandTorqueData = formatDataForChart([{
-    name: 'Tau1',
+    name: 'u1',
     data: a_command[0]
   }, {
-    name: 'Tau2',
+    name: 'u2',
     data: a_command[1]
   }, {
-    name: 'Tau3',
+    name: 'u3',
     data: a_command[2]
   }, {
-    name: 'Tau4',
+    name: 'u4',
     data: a_command[3]
   }], ts);
 
@@ -158,6 +159,12 @@ const SimulationPage = () => {
   }, {
     name: 'h_z',
     data: ang_mom_body_frame[2]
+  }], ts);
+
+  const eulerAnglesData = formatDataForChart([{
+    name: 'y',
+    // clamp the value between 0 and 0.2 degrees
+    data: euler_angles[1].map(rad => Math.min(Math.max(rad2deg(rad), 0), 0.2))
   }], ts);
 
   return (
@@ -233,6 +240,21 @@ const SimulationPage = () => {
             <Tooltip />
             <Legend />
             {distanceChartData.meta.map(({key, stroke}) => (
+              <Line type="monotone" key={key} dataKey={key} stroke={stroke} />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <div>
+        <h2>Attitude error angle</h2>
+        <ResponsiveContainer width="50%" height={400}>
+          <LineChart data={eulerAnglesData.data}>
+            <CartesianGrid strokeDasharray="5 5" opacity={0.5} />
+            <XAxis dataKey="timestamp" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            {eulerAnglesData.meta.map(({key, stroke}) => (
               <Line type="monotone" key={key} dataKey={key} stroke={stroke} />
             ))}
           </LineChart>
