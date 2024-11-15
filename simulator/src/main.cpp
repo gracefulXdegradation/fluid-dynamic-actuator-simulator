@@ -386,30 +386,12 @@ int main()
             return ActuatorCostFunction(actuator, time, initial_state, command, std::chrono::duration<double>(config.getControlTimeStep()).count(), commanded_torque);
         };
 
-        // ===============
-
-        Vector2d x0 = {0.0, 0.0};
-        double command = -0.23606797749979;
-        double commanded_torque = 0.0;
-        auto cost = cost_function(0, x0, command, commanded_torque);
-
-        std::cout << "Cost: " << cost << std::endl;
-
-        // ===============
-
         double precision = 1e-2;
-
-        double cost_time = 0.0;
-        double req_torque = 2.55105652012911e-05;
 
         auto command_finder = [&](const double time, const Vector2d &state0, const double required_torque) -> double
         {
             return ActuatorControlValueFinder(cost_function, time, state0, required_torque, precision);
         };
-
-        std::cout << "Minimal value found: " << command_finder(cost_time, x0, req_torque) << std::endl;
-
-        // ===============
 
         // Control
 
@@ -433,20 +415,13 @@ int main()
         Matrix3Xd b_control_torque(3, date_times.size());
         Matrix4Xd a_command(4, date_times.size());
         std::vector<Quaterniond> q_bc(date_times.size());
-        // for (int i = 0; i < date_times.size() - 1; i++) {
-        for (int i = 0; i < 1; i++)
+        for (int i = 0; i < date_times.size() - 1; i++)
         {
             // ----- Control error -----
             // Error quaternion
             Vector4d q_bc_coef = state.col(i).segment(0, 4);
             Quaterniond q_bc_(q_bc_coef[0], q_bc_coef[1], q_bc_coef[2], q_bc_coef[3]);
-
-            std::cout << "q_bc_" << std::endl;
-            std::cout << q_bc_ << std::endl;
-            std::cout << "q_ic[0]" << std::endl;
-            std::cout << q_ic[0] << std::endl;
-
-            q_bc[i] = q_bc_.conjugate() * q_ic[0];
+            q_bc[i] = q_bc_.conjugate() * q_ic[i];
             // Angular rate error
             b_omega_d.col(i) = q_bc[i] * c_omega_c.col(i) - state.col(i).segment(4, 3);
             // ----- PD control law -----
@@ -464,21 +439,63 @@ int main()
                 a_command(j, i) = command_finder(0.0, actuator_state.col(j), a_control_torque(j, i));
             }
 
+            // ----- Dynamics and kinematics equation within rhs function -----
+            // Solve differential equations for next time point or span
+
+            std::vector<Matrix<double, 15, 1>> integrated_states;
+            std::vector<double> integrated_time_steps;
+            auto observer = [&](const Matrix<double, 15, 1> &x, const double t)
+            {
+                integrated_states.push_back(x);
+                integrated_time_steps.push_back(t);
+            };
+
+            auto system = [&](const Matrix<double, 15, 1> &x, Matrix<double, 15, 1> &dxdt, const double t)
+            {
+                Matrix<double, 15, 1> state_derivative = rhs(t, x, a_command.col(i), TetrahedronActuatorAssemblyStateExtractor, actuator_assembly, actuator_property_extractor, inertia, m_i_r.col(i));
+                dxdt.col(0) = state_derivative.col(0);
+            };
+
             // ----- Solve with higher frequency than control cycle -----
-            // time_span = ;
+            double t0 = std::chrono::duration_cast<std::chrono::milliseconds>(date_times[i].time_since_epoch()).count() / 1000.0;
+            double t1 = std::chrono::duration_cast<std::chrono::milliseconds>(date_times[i + 1].time_since_epoch()).count() / 1000.0;
+            double dt = (t1 - t0) / 11;
 
-            int rhs_t = 1688480700;
+            Matrix<double, 15, 1> x0 = state.col(i);
 
-            std::cout << rhs(rhs_t, state.col(i), a_command.col(i), TetrahedronActuatorAssemblyStateExtractor, actuator_assembly, actuator_property_extractor, inertia, m_i_r.col(i)) << std::endl;
+            odeint::integrate_const(odeint::runge_kutta4<Matrix<double, 15, 1>>(), system, x0, t0, t1, dt, observer);
+            state.col(i + 1) = integrated_states.back();
         }
 
-        // std::cout << "a_command" << std::endl;
-        // std::cout << a_command.col(0) << std::endl;
+        // Calculate the Final State
+        int last_index = date_times.size() - 1;
+        // ----- Control error -----
+        Vector4d q_bc_coef = state.col(last_index).segment(0, 4);
+        Quaterniond q_bc_(q_bc_coef[0], q_bc_coef[1], q_bc_coef[2], q_bc_coef[3]);
+        q_bc[last_index] = q_bc_.conjugate() * q_ic[last_index];
+        b_omega_d.col(last_index) = q_bc[last_index] * c_omega_c.col(last_index) - state.col(last_index).segment(4, 3);
+        // ----- PD control law -----
+        double qs = q_bc[last_index].w();
+        Vector3d qv = {q_bc[last_index].x(), q_bc[last_index].y(), q_bc[last_index].z()};
+        b_control_torque.col(last_index) = -1 * (Kp * MathHelpers::signum(qs) * qv + Kd * b_omega_d.col(last_index));
+        //  ----- Distribute control input to actuators -----
+        a_control_torque.col(last_index) = inverse_actuator_alignment * b_control_torque.col(last_index);
+        Matrix<double, 2, 4> actuator_state = TetrahedronActuatorAssemblyStateExtractor(state.col(last_index)).reshaped(2, 4);
+        // ----- Calculate the command to the actuator assembly -----
+        for (int j = 0; j < 4; j++)
+        {
+            a_command(j, last_index) = command_finder(0.0, actuator_state.col(j), a_control_torque(j, last_index));
+        }
+        std::cout << "Simulation complete!" << std::endl;
 
         // Save to file
         auto ts = DateTime::getCurrentTimestamp();
         DB::writematrix(m_i_r, "./output/" + ts, "i_r.csv");
         DB::writematrix(m_i_v, "./output/" + ts, "i_v.csv");
+        DB::writematrix(a_control_torque * 1e3, "./output/" + ts, "a_control_torque.csv");
+        DB::writematrix(a_command, "./output/" + ts, "a_command.csv");
+        DB::writematrix(state, "./output/" + ts, "state.csv");
+        DB::writematrix(distance, "./output/" + ts, "distance.csv");
         DB::serializeTimePointsToCSV(date_times, "./output/" + ts, "t.csv");
 
         std::cout << "Data saved to output.txt" << std::endl;
