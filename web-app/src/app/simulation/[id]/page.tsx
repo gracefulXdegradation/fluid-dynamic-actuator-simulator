@@ -44,24 +44,12 @@ const SimulationPage = () => {
   }
 
   // Prepare data for plotting
-  const { t, d } = data;
+  const { t, a_control_torque, d } = data;
 
   const ts = t[0];
 
-  // const radiusData = [
-  //   { name: 'X', data: r[0] },
-  //   { name: 'Y', data: r[1] },
-  //   { name: 'Z', data: r[2] },
-  // ];
-
-  // const velocityData = [
-  //   { name: 'X', data: v[0] },
-  //   { name: 'Y', data: v[1] },
-  //   { name: 'Z', data: v[2] },
-  // ];
-
   const formatDataForChart = (vectorData: { name: string; data: number[] }[], timestamps: number[]) => {
-    return timestamps.reduce((acc, ti, index) => {
+    const data = timestamps.reduce((acc, ti, index) => {
       const obj = {
         name: new Date(ti * 1000),
         t: ti        
@@ -76,66 +64,60 @@ const SimulationPage = () => {
       return acc;
     }, [] as {name: Date; t: number; [key: string]: number}[])
 
-    // return vectorData[0].data.map((_, index) => {
-    //   const obj = { timestamp: new Date(timestamps[index] * 1000) };
-    //   vectorData.forEach((vector) => {
-    //     obj[vector.name] = vector.data[index];
-    //   });
-    //   return obj;
-    // });
+    return {
+      data,
+      keys: vectorData.map(v => v.name)
+    };
   };
 
-  // const radiusChartData = formatDataForChart(radiusData);
-  // const velocityChartData = formatDataForChart(velocityData);
   const distanceChartData = formatDataForChart([{
     name: 'Distance', data: d[0]
+  }], ts);
+
+  const controlTorqueData = formatDataForChart([{
+    name: 'Tau1',
+    data: a_control_torque[0]
+  }, {
+    name: 'Tau2',
+    data: a_control_torque[1]
+  }, {
+    name: 'Tau3',
+    data: a_control_torque[2]
+  }, {
+    name: 'Tau4',
+    data: a_control_torque[3]
   }], ts);
 
   return (
     <div>
       <h1>Simulation {id}</h1>
-      {/* <div>
-        <h2>Radius Vector</h2>
-        <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={radiusChartData}>
+      <div>
+        <h2>Required control torque</h2>
+        <ResponsiveContainer width="50%" height={400}>
+          <LineChart data={controlTorqueData.data}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="timestamp" />
             <YAxis />
             <Tooltip />
             <Legend />
-            {radiusData.map((data) => (
-              <Line key={data.name} type="monotone" dataKey={data.name} stroke="#8884d8" />
+            {controlTorqueData.keys.map((key) => (
+              <Line key={key} type="monotone" dataKey={key} stroke="#8884d8" />
             ))}
           </LineChart>
         </ResponsiveContainer>
       </div>
       <div>
-        <h2>Velocity Vector</h2>
-        <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={velocityChartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="timestamp" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            {velocityData.map((data) => (
-              <Line key={data.name} type="monotone" dataKey={data.name} stroke="#82ca9d" />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
-      </div> */}
-      <div>
         <h2>Distance</h2>
-        <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={distanceChartData}>
+        <ResponsiveContainer width="50%" height={400}>
+          <LineChart data={distanceChartData.data}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="timestamp" />
             <YAxis />
             <Tooltip />
             <Legend />
-            {/* {distanceChartData.map((data) => ( */}
-              <Line type="monotone" dataKey="Distance" stroke="#82ca9d" />
-            {/* ))} */}
+            {distanceChartData.keys.map((key) => (
+              <Line type="monotone" key={key} dataKey={key} stroke="#82ca9d" />
+            ))}
           </LineChart>
         </ResponsiveContainer>
       </div>
