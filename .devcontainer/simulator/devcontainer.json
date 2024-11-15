@@ -3,5 +3,6 @@
 	"dockerComposeFile": ["../../docker-compose.yml"],
 	"service": "simulator",
 	"shutdownAction": "none",
-	"workspaceFolder": "/workspace/simulator"
+	"workspaceFolder": "/workspace/simulator",
+	"postCreateCommand": "cmake -S . -B build && cmake --build ${containerWorkspaceFolder}/build --config Debug && sudo ${containerWorkspaceFolder}/build/bin/fds"
 }
