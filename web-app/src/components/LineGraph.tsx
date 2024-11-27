@@ -21,63 +21,63 @@ const LineGraph = ({ timestamps, values, graphNames }) => {
 
     const yScale = d3
       .scaleLinear()
-      .domain([
-        d3.min(values.flat()),
-        d3.max(values.flat()),
-      ])
+      .domain([d3.min(values.flat()), d3.max(values.flat())])
       .nice()
       .range([height - margin.bottom, margin.top]);
 
     const xAxis = d3.axisBottom(xScale).ticks(10);
     const yAxis = d3.axisLeft(yScale);
 
-    svg.append("g").attr("transform", `translate(0,${height - margin.bottom})`).call(xAxis);
-    svg.append("g").attr("transform", `translate(${margin.left},0)`).call(yAxis);
-
-    
-
-    const line1 = d3
-      .line()
-      .x((d, i) => xScale(timestamps[i]))
-      .y((d) => yScale(d))
-      .curve(d3.curveMonotoneX);
-
-    const line2 = d3
-      .line()
-      .x((d, i) => xScale(timestamps[i]))
-      .y((d) => yScale(d))
-      .curve(d3.curveMonotoneX);
-
-    const line3 = d3
-      .line()
-      .x((d, i) => xScale(timestamps[i]))
-      .y((d) => yScale(d))
-      .curve(d3.curveMonotoneX);
+    svg
+      .append("g")
+      .attr("transform", `translate(0,${height - margin.bottom})`)
+      .call(xAxis);
+    svg
+      .append("g")
+      .attr("transform", `translate(${margin.left},0)`)
+      .call(yAxis);
 
     values.forEach((v, i) => {
-      svg.append("path").attr('class', 'graph').datum(v).attr("fill", "none").attr("stroke", colors[i]).attr("stroke-width", 1.5).attr("d", line1);
+      const line = d3
+        .line()
+        .x((d, i) => xScale(timestamps[i]))
+        .y((d) => yScale(d))
+        .curve(d3.curveMonotoneX);
 
+      svg
+        .append("path")
+        .attr("class", "graph")
+        .datum(v)
+        .attr("fill", "none")
+        .attr("stroke", colors[i])
+        .attr("stroke-width", 1.5)
+        .attr("d", line);
     });
 
-    const mouseLine = svg.append('g').attr("class","mouseLineGroup").style("opacity", "0");
+    // Append mouseLine group
+    const mouseLineGroup = svg
+      .append("g")
+      .attr("class", "mouseLineGroup")
+      .style("opacity", "0");
 
-    mouseLine
+    mouseLineGroup
       .append("path")
-      .attr("class","mouseLine")
-      .style("stroke","white")
+      .attr("class", "mouseLine")
+      .style("stroke", "white")
       .style("stroke-width", "1px");
 
-    svg.selectAll('.graph').each((_, i) => {
-      mouseLine.append("circle")
-      .attr("class","mouseCircle") // add a circle to follow along path
-      .attr("r", 5)
-      .style("stroke", colors[i])
-      .style("fill","none")
-      .style("stroke-width", "1px")
-    })
+    values.forEach((_, i) => {
+      mouseLineGroup
+        .append("circle")
+        .attr("class", "mouseCircle")
+        .attr("r", 5)
+        .style("stroke", colors[i])
+        .style("fill", "none")
+        .style("stroke-width", "1px");
+    });
 
     const tooltip = d3
-      .select("body")
+      .select(svgRef.current.parentNode) // Append tooltip to the container, scoped to this graph
       .append("div")
       .style("position", "absolute")
       .style("background", "rgba(255,255,255,0.9)")
@@ -89,24 +89,15 @@ const LineGraph = ({ timestamps, values, graphNames }) => {
       .style("pointer-events", "none")
       .style("font-size", "12px");
 
-    const overlay = svg
-      .append("rect")
-      .attr("fill", "none")
-      .attr("pointer-events", "all")
-      .attr("width", width - margin.left - margin.right)
-      .attr("height", height - margin.top - margin.bottom)
-      .attr("transform", `translate(${margin.left},${margin.top})`);
-
     const bisectDate = d3.bisector((d) => d).center;
 
-    overlay.on("mousemove", (event) => {
+    svg.on("mousemove", (event) => {
       const [mouseX] = d3.pointer(event);
       const hoveredX = xScale.invert(mouseX + margin.left);
-      
+
       const closestIndex = bisectDate(timestamps, hoveredX.getTime());
-      
       const closestTimestamp = timestamps[closestIndex];
-      const yValues = values.map(v => v[closestIndex]);
+      const yValues = values.map((v) => v[closestIndex]);
 
       if (closestTimestamp !== undefined) {
         tooltip
@@ -114,35 +105,28 @@ const LineGraph = ({ timestamps, values, graphNames }) => {
           .style("color", "black")
           .style("left", `${xScale(closestTimestamp) + 10}px`)
           .style("top", `${event.pageY - 20}px`)
-          .html(`
-            <strong>${new Date(closestTimestamp).toLocaleString()}</strong><br>
-            ${graphNames[0]}: ${yValues[0].toFixed(2)}<br>
-            ${graphNames[1]}: ${yValues[1].toFixed(2)}<br>
-            ${graphNames[2]}: ${yValues[2].toFixed(2)}
-          `);
-      }
+          .html(
+            `<strong>${new Date(closestTimestamp).toLocaleString()}</strong><br>
+            ${graphNames.map((name, i) => `${name}: ${yValues[i].toFixed(2)}`).join("<br>")}
+          `
+          );
 
-      d3.select(".mouseLine")
-      .attr("d", function(){
-          const yRange = yScale.range(); // range of y axis
-          const xCoor = xScale(closestTimestamp); // mouse position in x
-          
-          d3.selectAll('.mouseCircle') // for each circle group
-              .each(function(d,i){
-                const yCoor = yScale(yValues[i]);
-                d3.select(this) // move the circle to intersection
-                  .attr('transform', 'translate(' + xCoor + ',' + yCoor + ')');
-              });
-          return "M"+ xCoor +"," + yRange[0] + "L" + xCoor + "," + yRange[1]; // position vertical line
-      });
+        mouseLineGroup.style("opacity", "1");
+
+        const yRange = yScale.range();
+        const xCoor = xScale(closestTimestamp);
+
+        mouseLineGroup.select(".mouseLine").attr("d", `M${xCoor},${yRange[0]}L${xCoor},${yRange[1]}`);
+
+        mouseLineGroup.selectAll(".mouseCircle").each(function (d, i) {
+          const yCoor = yScale(yValues[i]);
+          d3.select(this).attr("transform", `translate(${xCoor},${yCoor})`);
+        });
+      }
     });
 
-    overlay.on('mouseover', function(){ // on mouse in show line, circles and text
-      d3.select(".mouseLineGroup")
-          .style("opacity", "1");
-    }).on("mouseout", () => {
-      d3.select(".mouseLineGroup")
-        .style("opacity", "0");
+    svg.on("mouseout", () => {
+      mouseLineGroup.style("opacity", "0");
       tooltip.style("display", "none");
     });
   }, [timestamps, values, graphNames]);

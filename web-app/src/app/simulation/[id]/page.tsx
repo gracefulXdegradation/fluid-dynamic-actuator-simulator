@@ -174,12 +174,12 @@ const SimulationPage = () => {
     <div>
       <h1>Simulation {id}</h1>
       <div>
-      <LineGraph
-        timestamps={ts}
-        values={ang_mom_body_frame}
-        graphNames={["h_x", "h_y", "h_z"]}
-      />
         <h2>Required control torque</h2>
+        <LineGraph
+          timestamps={ts}
+          values={a_control_torque}
+          graphNames={["Tau_1", "Tau_2", "Tau_3", "Tau_4"]}
+        />
         {/* <ResponsiveContainer width="50%" height={400}>
           <LineChart data={controlTorqueData.data}>
             <CartesianGrid strokeDasharray="3 3" opacity={0.5} />
@@ -191,11 +191,16 @@ const SimulationPage = () => {
               <Line type="monotone" key={key} dataKey={key} stroke={stroke} />
             ))}
           </LineChart>
-        </ResponsiveContainer>
+        </ResponsiveContainer> */}
       </div>
       <div>
         <h2>Body angular rate w.r.t. body frame</h2>
-        <ResponsiveContainer width="50%" height={400}>
+        <LineGraph
+          timestamps={ts}
+          values={[...angularRate, angularRateAbs]}
+          graphNames={["Omega x", "Omega y", "Omega z", "|Omega|"]}
+        />
+        {/* <ResponsiveContainer width="50%" height={400}>
           <LineChart data={angularRateData.data}>
             <CartesianGrid strokeDasharray="3 3" opacity={0.5} />
             <XAxis dataKey="timestamp" />
@@ -206,11 +211,11 @@ const SimulationPage = () => {
               <Line type="monotone" key={key} dataKey={key} stroke={stroke} />
             ))}
           </LineChart>
-        </ResponsiveContainer>
+        </ResponsiveContainer> */}
       </div>
       <div>
         <h2>Actuator angular momentum in actuator frame</h2>
-        <ResponsiveContainer width="50%" height={400}>
+        {/* <ResponsiveContainer width="50%" height={400}>
           <LineChart data={angularMomentumData.data}>
             <CartesianGrid strokeDasharray="3 3" opacity={0.5} />
             <XAxis dataKey="timestamp" />
@@ -221,11 +226,11 @@ const SimulationPage = () => {
               <Line type="monotone" key={key} dataKey={key} stroke={stroke} />
             ))}
           </LineChart>
-        </ResponsiveContainer>
+        </ResponsiveContainer> */}
       </div>
       <div>
         <h2>Actuator angular momentum in body frame</h2>
-        <ResponsiveContainer width="50%" height={400}>
+        {/* <ResponsiveContainer width="50%" height={400}>
           <LineChart data={angularMomentumBodyFrameData.data}>
             <CartesianGrid strokeDasharray="3 3" opacity={0.5} />
             <XAxis dataKey="timestamp" />
@@ -236,11 +241,11 @@ const SimulationPage = () => {
               <Line type="monotone" key={key} dataKey={key} stroke={stroke} />
             ))}
           </LineChart>
-        </ResponsiveContainer>
+        </ResponsiveContainer> */}
       </div>
       <div>
         <h2>Distance</h2>
-        <ResponsiveContainer width="50%" height={400}>
+        {/* <ResponsiveContainer width="50%" height={400}>
           <LineChart data={distanceChartData.data}>
             <CartesianGrid strokeDasharray="5 5" opacity={0.5} />
             <XAxis dataKey="timestamp" />
@@ -251,11 +256,11 @@ const SimulationPage = () => {
               <Line type="monotone" key={key} dataKey={key} stroke={stroke} />
             ))}
           </LineChart>
-        </ResponsiveContainer>
+        </ResponsiveContainer> */}
       </div>
       <div>
         <h2>Attitude error angle</h2>
-        <ResponsiveContainer width="50%" height={400}>
+        {/* <ResponsiveContainer width="50%" height={400}>
           <LineChart data={eulerAnglesData.data}>
             <CartesianGrid strokeDasharray="5 5" opacity={0.5} />
             <XAxis dataKey="timestamp" />
@@ -266,11 +271,11 @@ const SimulationPage = () => {
               <Line type="monotone" key={key} dataKey={key} stroke={stroke} />
             ))}
           </LineChart>
-        </ResponsiveContainer>
+        </ResponsiveContainer> */}
       </div>
       <div>
         <h2>Actuator commands</h2>
-        <ResponsiveContainer width="50%" height={400}>
+        {/* <ResponsiveContainer width="50%" height={400}>
           <LineChart data={commandTorqueData.data}>
             <CartesianGrid strokeDasharray="5 5" opacity={0.5} />
             <XAxis dataKey="timestamp" />
