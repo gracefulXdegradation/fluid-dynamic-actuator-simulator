@@ -170,26 +170,14 @@ const SimulationPage = () => {
     data: euler_angles[1].map(rad => Math.min(Math.max(rad2deg(rad), 0), 0.2))
   }], ts);
 
-
-
-  // ================
-
-  const timestamps = ts;
-  const values1 = ang_mom_body_frame[0];
-  const values2 = ang_mom_body_frame[1];
-  const values3 = ang_mom_body_frame[2];
-  const graphNames = ["h_x", "h_y", "h_z"];
-
   return (
     <div>
       <h1>Simulation {id}</h1>
       <div>
       <LineGraph
-        timestamps={timestamps}
-        values1={values1}
-        values2={values2}
-        values3={values3}
-        graphNames={graphNames}
+        timestamps={ts}
+        values={ang_mom_body_frame}
+        graphNames={["h_x", "h_y", "h_z"]}
       />
         <h2>Required control torque</h2>
         {/* <ResponsiveContainer width="50%" height={400}>

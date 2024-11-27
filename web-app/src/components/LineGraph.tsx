@@ -3,12 +3,10 @@ import * as d3 from "d3";
 
 const colors = ["steelblue", "orange", "green", "#ff6361"];
 
-const LineGraph = ({ timestamps, values1, values2, values3, graphNames }) => {
+const LineGraph = ({ timestamps, values, graphNames }) => {
   const svgRef = useRef();
 
   useEffect(() => {
-    if (!timestamps.length || !values1.length || !values2.length || !values3.length) return;
-
     const svg = d3.select(svgRef.current);
     const width = 800;
     const height = 400;
@@ -24,8 +22,8 @@ const LineGraph = ({ timestamps, values1, values2, values3, graphNames }) => {
     const yScale = d3
       .scaleLinear()
       .domain([
-        d3.min([values1, values2, values3].flat()),
-        d3.max([values1, values2, values3].flat()),
+        d3.min(values.flat()),
+        d3.max(values.flat()),
       ])
       .nice()
       .range([height - margin.bottom, margin.top]);
@@ -56,9 +54,10 @@ const LineGraph = ({ timestamps, values1, values2, values3, graphNames }) => {
       .y((d) => yScale(d))
       .curve(d3.curveMonotoneX);
 
-    svg.append("path").attr('class', 'graph').datum(values1).attr("fill", "none").attr("stroke", colors[0]).attr("stroke-width", 1.5).attr("d", line1);
-    svg.append("path").attr('class', 'graph').datum(values2).attr("fill", "none").attr("stroke", colors[1]).attr("stroke-width", 1.5).attr("d", line2);
-    svg.append("path").attr('class', 'graph').datum(values3).attr("fill", "none").attr("stroke", colors[2]).attr("stroke-width", 1.5).attr("d", line3);
+    values.forEach((v, i) => {
+      svg.append("path").attr('class', 'graph').datum(v).attr("fill", "none").attr("stroke", colors[i]).attr("stroke-width", 1.5).attr("d", line1);
+
+    });
 
     const mouseLine = svg.append('g').attr("class","mouseLineGroup").style("opacity", "0");
 
@@ -107,7 +106,7 @@ const LineGraph = ({ timestamps, values1, values2, values3, graphNames }) => {
       const closestIndex = bisectDate(timestamps, hoveredX.getTime());
       
       const closestTimestamp = timestamps[closestIndex];
-      const yValues = [values1[closestIndex], values2[closestIndex], values3[closestIndex]];
+      const yValues = values.map(v => v[closestIndex]);
 
       if (closestTimestamp !== undefined) {
         tooltip
@@ -146,7 +145,7 @@ const LineGraph = ({ timestamps, values1, values2, values3, graphNames }) => {
         .style("opacity", "0");
       tooltip.style("display", "none");
     });
-  }, [timestamps, values1, values2, values3, graphNames]);
+  }, [timestamps, values, graphNames]);
 
   return <svg ref={svgRef} width={800} height={400}></svg>;
 };
