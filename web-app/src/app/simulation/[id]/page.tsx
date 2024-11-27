@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import LineGraph from '@/components/LineGraph';
 
 const colors = ["#8884d8", "#82ca9d", "#ffa600", "#ff6361"];
 
@@ -67,7 +68,7 @@ const SimulationPage = () => {
   const formatDataForChart = (vectorData: { name: string; data: number[] }[], timestamps: number[]) => {
     const data = timestamps.reduce((acc, ti, index) => {
       const obj = {
-        name: new Date(ti * 1000),
+        name: new Date(ti),
         t: ti        
       };
 
@@ -150,6 +151,8 @@ const SimulationPage = () => {
     data: angularMomentum[3]
   }], ts);
 
+  console.log('angularMomentumData', angularMomentumData)
+
   const angularMomentumBodyFrameData = formatDataForChart([{
     name: 'h_x',
     data: ang_mom_body_frame[0]
@@ -167,12 +170,29 @@ const SimulationPage = () => {
     data: euler_angles[1].map(rad => Math.min(Math.max(rad2deg(rad), 0), 0.2))
   }], ts);
 
+
+
+  // ================
+
+  const timestamps = ts;
+  const values1 = ang_mom_body_frame[0];
+  const values2 = ang_mom_body_frame[1];
+  const values3 = ang_mom_body_frame[2];
+  const graphNames = ["h_x", "h_y", "h_z"];
+
   return (
     <div>
       <h1>Simulation {id}</h1>
       <div>
+      <LineGraph
+        timestamps={timestamps}
+        values1={values1}
+        values2={values2}
+        values3={values3}
+        graphNames={graphNames}
+      />
         <h2>Required control torque</h2>
-        <ResponsiveContainer width="50%" height={400}>
+        {/* <ResponsiveContainer width="50%" height={400}>
           <LineChart data={controlTorqueData.data}>
             <CartesianGrid strokeDasharray="3 3" opacity={0.5} />
             <XAxis dataKey="timestamp" />
@@ -273,7 +293,7 @@ const SimulationPage = () => {
               <Line type="monotone" key={key} dataKey={key} stroke={stroke} />
             ))}
           </LineChart>
-        </ResponsiveContainer>
+        </ResponsiveContainer> */}
       </div>
     </div>
   );
