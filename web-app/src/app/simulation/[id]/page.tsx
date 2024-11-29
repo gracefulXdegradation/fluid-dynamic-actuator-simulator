@@ -56,7 +56,8 @@ const SimulationPage = () => {
   
   const angularRate = state.slice(4,7).map((data: number[]) => data.map(rad2deg));
   const angularRateAbs = angularRate[0].map((_, i) => Math.pow(angularRate[0][i], 2) + Math.pow(angularRate[1][i], 2) + Math.pow(angularRate[2][i],2) )
-  const angularMomentum = [7, 9, 11 ,13].map(i => state[i]);
+  const angularMomentum = [7, 9, 11 ,13].map(i => state[i].map(v => v * 1e6));
+  const angularMomentumBodyFrame = ang_mom_body_frame.map(dim => dim.map(v => v * 1e6));
   const ts = t[0];
 
   return (
@@ -91,7 +92,7 @@ const SimulationPage = () => {
           <h2>Actuator angular momentum in body frame</h2>
           <LineGraph
             timestamps={ts}
-            values={ang_mom_body_frame}
+            values={angularMomentumBodyFrame}
             graphNames={["h_x", "h_y", "h_z"]}
           />
         </div>
