@@ -99,13 +99,19 @@ namespace DB
     }
 
     // Loop over the time_points vector
-    for (const auto &tp : time_points)
+    for (int i = 0; i < time_points.size(); i++)
     {
+      auto tp = time_points[i];
       // Convert time_point to time_t (Unix timestamp)
-      std::time_t time_since_epoch = std::chrono::system_clock::to_time_t(tp);
+      auto duration_since_epoch = tp.time_since_epoch();
+      auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration_since_epoch).count();
 
       // Write the timestamp to the file (as Unix timestamp)
-      file << time_since_epoch << ",";
+      file << millis;
+      if (i < time_points.size() - 1)
+      {
+        file << ",";
+      }
     }
     file << "\n";
 
