@@ -19,3 +19,17 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.container > div {
+  flex: 1 1 400px; /* Flex-grow: 1, Flex-shrink: 1, Flex-basis: 400px */
+  max-width: 50%;  /* Limits columns to 50% of the container width */
+  padding: 16px;
+  text-align: center;
+  border-radius: 8px;
+  box-sizing: border-box;
+}

@@ -36,7 +36,7 @@ const SimulationsPage = () => {
     <div style={{ textAlign: 'center' }}>
       <h1>Simulation Entries</h1>
       {loading ? (
-        <div className="loading-indicator">Loading...</div>
+        <div className="loading-indicator"/>
       ) : entries.length > 0 ? (
         <ul>
           {entries.map((entry) => (

@@ -1,15 +1,32 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 
 const colors = ["steelblue", "orange", "green", "#ff6361"];
 
+const height = (w: number) => w * 2 / 3 ;
+const initialWidth = 600;
+
 const LineGraph = ({ timestamps, values, graphNames }) => {
   const svgRef = useRef();
+  const containerRef = useRef();
+  const [dimensions, setDimensions] = useState({ width: initialWidth, height: height(initialWidth) });
+
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const { width } = containerRef.current.getBoundingClientRect();
+        setDimensions({ width, height: height(width) || 400 });
+      }
+    };
+
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
+    return () => window.removeEventListener("resize", updateDimensions);
+  }, []);
 
   useEffect(() => {
     const svg = d3.select(svgRef.current);
-    const width = 800;
-    const height = 400;
+    const { width, height } = dimensions;
     const margin = { top: 20, right: 30, bottom: 40, left: 50 };
 
     svg.selectAll("*").remove();
@@ -104,7 +121,7 @@ const LineGraph = ({ timestamps, values, graphNames }) => {
         tooltip
           .style("display", "block")
           .style("color", "black")
-          .style("left", `${xScale(closestTimestamp) + 10}px`)
+          .style("left", `${event.pageX + 10}px`)
           .style("top", `${event.pageY - 20}px`)
           .html(
             `<strong>${new Date(closestTimestamp).toLocaleString()}</strong><br>
@@ -130,9 +147,17 @@ const LineGraph = ({ timestamps, values, graphNames }) => {
       mouseLineGroup.style("opacity", "0");
       tooltip.style("display", "none");
     });
-  }, [timestamps, values, graphNames]);
+  }, [timestamps, values, graphNames, dimensions]);
 
-  return <svg ref={svgRef} width={800} height={400}></svg>;
+  return (<div ref={containerRef} style={{ width: "100%", height: "100%" }}>
+    <svg
+      ref={svgRef}
+      width={dimensions.width}
+      height={dimensions.height}
+      viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
+      preserveAspectRatio="xMinYMin meet"
+    />
+  </div>);
 };
 
 export default LineGraph;

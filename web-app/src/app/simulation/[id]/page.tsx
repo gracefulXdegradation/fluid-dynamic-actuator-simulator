@@ -1,10 +1,7 @@
 "use client"
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import LineGraph from '@/components/LineGraph';
-
-const colors = ["#8884d8", "#82ca9d", "#ffa600", "#ff6361"];
 
 const rad2deg = (rad: number) => rad * 180 / Math.PI;
 
@@ -63,65 +60,67 @@ const SimulationPage = () => {
   const ts = t[0];
 
   return (
-    <div>
+    <>
       <h1>Simulation {id}</h1>
-      <div>
-        <h2>Required control torque</h2>
-        <LineGraph
-          timestamps={ts}
-          values={a_control_torque}
-          graphNames={["Tau_1", "Tau_2", "Tau_3", "Tau_4"]}
-        />
+      <div className='container'>
+        <div>
+          <h2>Required control torque</h2>
+          <LineGraph
+            timestamps={ts}
+            values={a_control_torque}
+            graphNames={["Tau_1", "Tau_2", "Tau_3", "Tau_4"]}
+          />
+        </div>
+        <div>
+          <h2>Body angular rate w.r.t. body frame</h2>
+          <LineGraph
+            timestamps={ts}
+            values={[...angularRate, angularRateAbs]}
+            graphNames={["Omega x", "Omega y", "Omega z", "|Omega|"]}
+          />
+        </div>
+        <div>
+          <h2>Actuator angular momentum in actuator frame</h2>
+          <LineGraph
+            timestamps={ts}
+            values={angularMomentum}
+            graphNames={["h1", "h2", "h3", "h4"]}
+          />
+        </div>
+        <div>
+          <h2>Actuator angular momentum in body frame</h2>
+          <LineGraph
+            timestamps={ts}
+            values={ang_mom_body_frame}
+            graphNames={["h_x", "h_y", "h_z"]}
+          />
+        </div>
+        <div>
+          <h2>Distance</h2>
+          <LineGraph
+            timestamps={ts}
+            values={d}
+            graphNames={["Distance"]}
+          />
+        </div>
+        <div>
+          <h2>Attitude error angle</h2>
+          <LineGraph
+            timestamps={ts}
+            values={[euler_angles[1].map(rad => Math.min(Math.max(rad2deg(rad), 0), 0.2))]}
+            graphNames={["y"]}
+          />
+        </div>
+        <div>
+          <h2>Actuator commands</h2>
+          <LineGraph
+            timestamps={ts}
+            values={a_command}
+            graphNames={["u1", "u2", "u3", "u4"]}
+          />
+        </div>
       </div>
-      <div>
-        <h2>Body angular rate w.r.t. body frame</h2>
-        <LineGraph
-          timestamps={ts}
-          values={[...angularRate, angularRateAbs]}
-          graphNames={["Omega x", "Omega y", "Omega z", "|Omega|"]}
-        />
-      </div>
-      <div>
-        <h2>Actuator angular momentum in actuator frame</h2>
-        <LineGraph
-          timestamps={ts}
-          values={angularMomentum}
-          graphNames={["h1", "h2", "h3", "h4"]}
-        />
-      </div>
-      <div>
-        <h2>Actuator angular momentum in body frame</h2>
-        <LineGraph
-          timestamps={ts}
-          values={ang_mom_body_frame}
-          graphNames={["h_x", "h_y", "h_z"]}
-        />
-      </div>
-      <div>
-        <h2>Distance</h2>
-        <LineGraph
-          timestamps={ts}
-          values={d}
-          graphNames={["Distance"]}
-        />
-      </div>
-      <div>
-        <h2>Attitude error angle</h2>
-        <LineGraph
-          timestamps={ts}
-          values={[euler_angles[1].map(rad => Math.min(Math.max(rad2deg(rad), 0), 0.2))]}
-          graphNames={["y"]}
-        />
-      </div>
-      <div>
-        <h2>Actuator commands</h2>
-        <LineGraph
-          timestamps={ts}
-          values={a_command}
-          graphNames={["u1", "u2", "u3", "u4"]}
-        />
-      </div>
-    </div>
+    </>
   );
 };
 
