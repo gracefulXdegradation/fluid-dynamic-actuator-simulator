@@ -58,7 +58,8 @@ const LineGraph = ({ timestamps, values, graphNames }) => {
     const mouseLineGroup = svg
       .append("g")
       .attr("class", "mouseLineGroup")
-      .style("opacity", "0");
+      .style("opacity", "0")
+      .style("pointer-events", "none");
 
     mouseLineGroup
       .append("path")
@@ -93,7 +94,7 @@ const LineGraph = ({ timestamps, values, graphNames }) => {
 
     svg.on("mousemove", (event) => {
       const [mouseX] = d3.pointer(event);
-      const hoveredX = xScale.invert(mouseX + margin.left);
+      const hoveredX = xScale.invert(mouseX);
 
       const closestIndex = bisectDate(timestamps, hoveredX.getTime());
       const closestTimestamp = timestamps[closestIndex];
