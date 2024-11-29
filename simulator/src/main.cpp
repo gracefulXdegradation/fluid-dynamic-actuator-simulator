@@ -517,6 +517,9 @@ int main()
         DB::writematrix(distance, "./output/" + ts, "distance.csv");
         DB::serializeTimePointsToCSV(date_times, "./output/" + ts, "t.csv");
 
+        std::cout << "First Date " << std::chrono::duration_cast<std::chrono::milliseconds>(date_times[0].time_since_epoch()).count() << std::endl;
+        std::cout << "Last Date " << std::chrono::duration_cast<std::chrono::milliseconds>(date_times[date_times.size() - 1].time_since_epoch()).count() << std::endl;
+
         std::cout << "Data saved to output.txt" << std::endl;
     }
     catch (const exception &e)
