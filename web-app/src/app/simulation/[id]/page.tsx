@@ -40,9 +40,7 @@ const SimulationPage = () => {
 
   if (loading) {
     return (
-      <div className="loading-container">
-        <p>Loading data...</p>
-      </div>
+      <div className="loading-indicator"/>
     );
   }
 
@@ -61,9 +59,9 @@ const SimulationPage = () => {
   const ts = t[0];
 
   return (
-    <>
-      <h1>Simulation {id}</h1>
-      <div className='container'>
+    <div className="page-container">
+      <h1>#{id}</h1>
+      <div className='graph-container'>
         <div>
           <h2>Required control torque</h2>
           <LineGraph
@@ -133,7 +131,7 @@ const SimulationPage = () => {
           />
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

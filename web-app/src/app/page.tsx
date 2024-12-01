@@ -33,8 +33,8 @@ const SimulationsPage = () => {
   }, []);
 
   return (
-    <div style={{ textAlign: 'center' }}>
-      <h1>Simulation Entries</h1>
+    <div className="page-container">
+      <h1>Simulations</h1>
       {loading ? (
         <div className="loading-indicator"/>
       ) : entries.length > 0 ? (
@@ -42,7 +42,7 @@ const SimulationsPage = () => {
           {entries.map((entry) => (
             <li key={entry}>
               <Link href={`/simulation/${entry}`}>
-                {entry}
+                #{entry}
               </Link>
             </li>
           ))}
@@ -50,25 +50,6 @@ const SimulationsPage = () => {
       ) : (
         <div>No entries available.</div>
       )}
-      <style jsx>{`
-        .loading-indicator {
-          border: 4px solid #f3f3f3;
-          border-top: 4px solid #3498db;
-          border-radius: 50%;
-          width: 30px;
-          height: 30px;
-          animation: spin 1s linear infinite;
-          margin: 20px auto;
-        }
-        @keyframes spin {
-          0% {
-            transform: rotate(0deg);
-          }
-          100% {
-            transform: rotate(360deg);
-          }
-        }
-      `}</style>
     </div>
   );
 };

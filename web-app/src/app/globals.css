@@ -20,16 +20,29 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-.container {
+.page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 5rem 2rem;
+}
+
+.page-container h1 {
+  font-size: larger;
+  font-weight: bolder;
+  margin: 1em 0;
+}
+
+.graph-container {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
   margin: 0 auto;
   justify-content: center;
 }
-.container > div {
+.graph-container > div {
   flex: 1 1 400px; /* Flex-grow: 1, Flex-shrink: 1, Flex-basis: 400px */
-  max-width: 50%;  /* Limits columns to 50% of the container width */
+  max-width: 49.5%;  /* Limits columns to 50% of the container width */
   padding: 16px;
   text-align: center;
   border-radius: 8px;
@@ -39,4 +52,22 @@ body {
 .label__y,
 .label__x {
   font-size: small;
+}
+
+.loading-indicator {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+  margin: 20px auto;
+}
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
