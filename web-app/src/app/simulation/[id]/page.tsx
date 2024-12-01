@@ -69,7 +69,7 @@ const SimulationPage = () => {
           <LineGraph
             timestamps={ts}
             values={a_control_torque}
-            graphNames={["Tau_1", "Tau_2", "Tau_3", "Tau_4"]}
+            graphNames={["&tau;<sub>1</sub>", "&tau;<sub>2</sub>", "&tau;<sub>3</sub>", "&tau;<sub>4</sub>"]}
           />
         </div>
         <div>
@@ -77,7 +77,7 @@ const SimulationPage = () => {
           <LineGraph
             timestamps={ts}
             values={[...angularRate, angularRateAbs]}
-            graphNames={["Omega x", "Omega y", "Omega z", "|Omega|"]}
+            graphNames={["&omega;<sub>x</sub>", "&omega;<sub>y</sub>", "&omega;<sub>z</sub>", "|&omega;|"]}
           />
         </div>
         <div>
@@ -85,7 +85,7 @@ const SimulationPage = () => {
           <LineGraph
             timestamps={ts}
             values={angularMomentum}
-            graphNames={["h1", "h2", "h3", "h4"]}
+            graphNames={["h<sub>1</sub>", "h<sub>2</sub>", "h<sub>3</sub>", "h<sub>4</sub>"]}
           />
         </div>
         <div>
@@ -93,7 +93,7 @@ const SimulationPage = () => {
           <LineGraph
             timestamps={ts}
             values={angularMomentumBodyFrame}
-            graphNames={["h_x", "h_y", "h_z"]}
+            graphNames={["h<sub>x</sub>", "h<sub>y</sub>", "h<sub>z</sub>"]}
           />
         </div>
         <div>
@@ -117,7 +117,7 @@ const SimulationPage = () => {
           <LineGraph
             timestamps={ts}
             values={a_command}
-            graphNames={["u1", "u2", "u3", "u4"]}
+            graphNames={["&mu;<sub>1</sub>", "&mu;<sub>2</sub>", "&mu;<sub>3</sub>", "&mu;<sub>4</sub>"]}
           />
         </div>
       </div>

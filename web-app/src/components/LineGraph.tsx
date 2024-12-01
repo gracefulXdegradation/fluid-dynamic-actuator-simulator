@@ -125,7 +125,7 @@ const LineGraph = ({ timestamps, values, graphNames }) => {
           .style("top", `${event.pageY - 20}px`)
           .html(
             `<strong>${new Date(closestTimestamp).toLocaleString()}</strong><br>
-            ${graphNames.map((name, i) => `${name}: ${yValues[i].toFixed(2)}`).join("<br>")}
+            <div style="text-align:left">${graphNames.map((name, i) => `<b style="color: ${colors[i]}">${name}</b>: ${yValues[i].toFixed(2)}`).join("<br>")}</div>
           `
           );
 
