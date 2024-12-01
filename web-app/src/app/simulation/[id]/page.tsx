@@ -70,6 +70,8 @@ const SimulationPage = () => {
             timestamps={ts}
             values={a_control_torque}
             graphNames={["&tau;<sub>1</sub>", "&tau;<sub>2</sub>", "&tau;<sub>3</sub>", "&tau;<sub>4</sub>"]}
+            labelX="Time"
+            labelY="Torque [mNm]"
           />
         </div>
         <div>
@@ -77,7 +79,8 @@ const SimulationPage = () => {
           <LineGraph
             timestamps={ts}
             values={[...angularRate, angularRateAbs]}
-            graphNames={["&omega;<sub>x</sub>", "&omega;<sub>y</sub>", "&omega;<sub>z</sub>", "|&omega;|"]}
+            graphNames={["<sub>b</sub>&omega;<sub>bx</sub>", "<sub>b</sub>&omega;<sub>by</sub>", "<sub>b</sub>&omega;<sub>bz</sub>", "|<sub>b</sub>&omega;<sub>b</sub>|"]}
+            labelX="Time"
           />
         </div>
         <div>
@@ -86,6 +89,8 @@ const SimulationPage = () => {
             timestamps={ts}
             values={angularMomentum}
             graphNames={["h<sub>1</sub>", "h<sub>2</sub>", "h<sub>3</sub>", "h<sub>4</sub>"]}
+            labelX="Time"
+            labelY="Angular momentum [&mu;Nms]"
           />
         </div>
         <div>
@@ -94,6 +99,8 @@ const SimulationPage = () => {
             timestamps={ts}
             values={angularMomentumBodyFrame}
             graphNames={["h<sub>x</sub>", "h<sub>y</sub>", "h<sub>z</sub>"]}
+            labelX="Time"
+            labelY="Angular momentum [&mu;Nms]"
           />
         </div>
         <div>
@@ -102,6 +109,8 @@ const SimulationPage = () => {
             timestamps={ts}
             values={d}
             graphNames={["Distance"]}
+            labelX="Time"
+            labelY="Distance to the ground station [km]"
           />
         </div>
         <div>
@@ -110,6 +119,8 @@ const SimulationPage = () => {
             timestamps={ts}
             values={[euler_angles[1].map(rad => Math.min(Math.max(rad2deg(rad), 0), 0.2))]}
             graphNames={["y"]}
+            labelX="Time"
+            labelY="Error angle [&deg;]"
           />
         </div>
         <div>
@@ -118,6 +129,7 @@ const SimulationPage = () => {
             timestamps={ts}
             values={a_command}
             graphNames={["&mu;<sub>1</sub>", "&mu;<sub>2</sub>", "&mu;<sub>3</sub>", "&mu;<sub>4</sub>"]}
+            labelX="Time"
           />
         </div>
       </div>

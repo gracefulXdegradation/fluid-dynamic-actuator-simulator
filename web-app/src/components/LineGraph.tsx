@@ -6,7 +6,7 @@ const colors = ["steelblue", "orange", "green", "#ff6361"];
 const height = (w: number) => w * 2 / 3 ;
 const initialWidth = 600;
 
-const LineGraph = ({ timestamps, values, graphNames }) => {
+const LineGraph = ({ timestamps, values, graphNames, labelX, labelY }) => {
   const svgRef = useRef();
   const containerRef = useRef();
   const [dimensions, setDimensions] = useState({ width: initialWidth, height: height(initialWidth) });
@@ -53,6 +53,29 @@ const LineGraph = ({ timestamps, values, graphNames }) => {
       .append("g")
       .attr("transform", `translate(${margin.left},0)`)
       .call(yAxis);
+
+    if (labelY) {
+      svg
+        .append('g')
+        .attr('transform', 'translate(' + 12 + ', ' + height/2 + ')')
+        .attr("class", "label__y")
+        .append("text")
+        .attr('text-anchor', 'middle')
+        .attr('fill', 'currentColor')
+        .attr('transform', 'rotate(-90)')
+        .text(labelY);
+    }
+
+    if (labelX) {
+      svg
+        .append('g')
+        .attr('transform', 'translate(' + width/2 + ', ' + (height-6) + ')')
+        .attr("class", "label__x")
+        .append("text")
+        .attr('text-anchor', 'middle')
+        .attr('fill', 'currentColor')
+        .text(labelX);
+    }
 
     values.forEach((v, i) => {
       const line = d3
@@ -125,7 +148,7 @@ const LineGraph = ({ timestamps, values, graphNames }) => {
           .style("top", `${event.pageY - 20}px`)
           .html(
             `<strong>${new Date(closestTimestamp).toLocaleString()}</strong><br>
-            <div style="text-align:left">${graphNames.map((name, i) => `<b style="color: ${colors[i]}">${name}</b>: ${yValues[i].toFixed(2)}`).join("<br>")}</div>
+            <div style="text-align:left">${graphNames.map((name, i) => `<b style="color: ${colors[i]}">${name}</b>: ${yValues[i].toFixed(4)}`).join("<br>")}</div>
           `
           );
 
@@ -147,7 +170,7 @@ const LineGraph = ({ timestamps, values, graphNames }) => {
       mouseLineGroup.style("opacity", "0");
       tooltip.style("display", "none");
     });
-  }, [timestamps, values, graphNames, dimensions]);
+  }, [timestamps, values, graphNames, dimensions, labelY, labelX]);
 
   return (<div ref={containerRef} style={{ width: "100%", height: "100%" }}>
     <svg

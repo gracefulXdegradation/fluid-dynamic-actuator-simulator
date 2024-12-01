@@ -35,3 +35,8 @@ body {
   border-radius: 8px;
   box-sizing: border-box;
 }
+
+.label__y,
+.label__x {
+  font-size: small;
+}
