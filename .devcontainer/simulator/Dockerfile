@@ -19,4 +19,5 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     libboost-all-dev \
     libpqxx-dev \
     libpq-dev \
+    libhiredis-dev \
     pkg-config

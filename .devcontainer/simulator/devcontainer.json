@@ -4,5 +4,5 @@
 	"service": "simulator",
 	"shutdownAction": "none",
 	"workspaceFolder": "/workspace/simulator",
-	"postCreateCommand": "cmake -S . -B build && cmake --build ${containerWorkspaceFolder}/build --config Debug && sudo ${containerWorkspaceFolder}/build/bin/fds"
+	"postCreateCommand": "cmake -S . -B build && cmake --build ${containerWorkspaceFolder}/build && sudo ${containerWorkspaceFolder}/build/bin/job_processor"
 }

@@ -25,7 +25,10 @@ const SimulationPage = () => {
     if (id) {
       const fetchData = async () => {
         try {
-          const response = await fetch(`/api/v1/entries/${id}`);
+          const response = await fetch(`/api/v1/simulations/${id}/metrics`);
+          if (!response.ok) {
+            throw new Error('Failed to fetch simulation metrics');
+          }
           const result = await response.json();
           setData(result);
         } catch (error) {

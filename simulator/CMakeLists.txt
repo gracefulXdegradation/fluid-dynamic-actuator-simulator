@@ -16,8 +16,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # Add the include directory to the compiler search path
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
-# Collect all .cpp files in the src directory
-file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
+# Collect all .cpp files in the src directory, excluding job_processor_main.cpp
+file(GLOB ALL_SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
+list(FILTER ALL_SOURCES EXCLUDE REGEX ".*job_processor_main\\.cpp$")
+set(SOURCES ${ALL_SOURCES})
 
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 include_directories(${EIGEN3_INCLUDE_DIR})
@@ -32,16 +34,44 @@ find_package(PostgreSQL REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(PQXX REQUIRED libpqxx)
 
-# Define the executable target
+# Find hiredis
+pkg_check_modules(HIREDIS REQUIRED hiredis)
+
+# Define the main simulator executable
 add_executable(${PROJECT_NAME} ${SOURCES})
 target_link_libraries(${PROJECT_NAME} 
     Eigen3::Eigen 
     ${Boost_LIBRARIES}
     PostgreSQL::PostgreSQL
     ${PQXX_LIBRARIES}
+    ${HIREDIS_LIBRARIES}
 )
-target_include_directories(${PROJECT_NAME} PRIVATE ${PQXX_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PRIVATE 
+    ${PQXX_INCLUDE_DIRS}
+    ${HIREDIS_INCLUDE_DIRS}
+)
 target_compile_options(${PROJECT_NAME} PRIVATE ${PQXX_CFLAGS_OTHER})
+
+# Define the job processor executable
+add_executable(job_processor 
+    src/job_processor_main.cpp
+    src/JobProcessor.cpp
+    src/RedisClient.cpp
+    src/Database.cpp
+)
+target_link_libraries(job_processor
+    Eigen3::Eigen
+    ${Boost_LIBRARIES}
+    PostgreSQL::PostgreSQL
+    ${PQXX_LIBRARIES}
+    ${HIREDIS_LIBRARIES}
+)
+target_include_directories(job_processor PRIVATE 
+    ${PROJECT_SOURCE_DIR}/include
+    ${PQXX_INCLUDE_DIRS}
+    ${HIREDIS_INCLUDE_DIRS}
+)
+target_compile_options(job_processor PRIVATE ${PQXX_CFLAGS_OTHER})
 
 # Copy resource files to the output directory after build
 set(RESOURCE_FILES
