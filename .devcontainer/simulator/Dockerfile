@@ -14,4 +14,9 @@ RUN if [ "${REINSTALL_CMAKE_VERSION_FROM_SOURCE}" != "none" ]; then \
 # RUN su vscode -c "${VCPKG_ROOT}/vcpkg install <your-port-name-here>"
 
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-    && apt-get -y install --no-install-recommends libeigen3-dev libboost-all-dev
+    && apt-get -y install --no-install-recommends \
+    libeigen3-dev \
+    libboost-all-dev \
+    libpqxx-dev \
+    libpq-dev \
+    pkg-config

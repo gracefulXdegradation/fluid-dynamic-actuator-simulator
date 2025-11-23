@@ -50,7 +50,7 @@
             "label": "Run Executable",
             "type": "shell",
             // TODO: fix user permissions in the container and remove sudo
-            "command": "sudo ./build/bin/fds",
+            "command": "sudo ./build/bin/fds 123e4567-e89b-12d3-a456-426614174000",
             "group": {
                 "kind": "test",
                 "isDefault": true

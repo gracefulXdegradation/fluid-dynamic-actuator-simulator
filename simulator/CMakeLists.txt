@@ -25,9 +25,23 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 find_package(Boost 1.74.0 COMPONENTS) 
 include_directories(${Boost_INCLUDE_DIRS})
 
+# Find PostgreSQL
+find_package(PostgreSQL REQUIRED)
+
+# Find pqxx using pkg-config
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(PQXX REQUIRED libpqxx)
+
 # Define the executable target
 add_executable(${PROJECT_NAME} ${SOURCES})
-target_link_libraries(${PROJECT_NAME} Eigen3::Eigen ${Boost_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} 
+    Eigen3::Eigen 
+    ${Boost_LIBRARIES}
+    PostgreSQL::PostgreSQL
+    ${PQXX_LIBRARIES}
+)
+target_include_directories(${PROJECT_NAME} PRIVATE ${PQXX_INCLUDE_DIRS})
+target_compile_options(${PROJECT_NAME} PRIVATE ${PQXX_CFLAGS_OTHER})
 
 # Copy resource files to the output directory after build
 set(RESOURCE_FILES

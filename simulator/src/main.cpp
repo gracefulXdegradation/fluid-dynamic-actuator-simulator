@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string>
+#include <cstdlib>
+#include <fstream>
 #include <Eigen/Dense>
 #include "TLE.h"
 #include "config.hpp"
@@ -7,6 +9,7 @@
 #include "Frames.hpp"
 #include "OrbitalMechanics.h"
 #include "DB.hpp"
+#include "Database.hpp"
 #include <cmath>
 #include <boost/numeric/odeint.hpp>
 #include <boost/math/tools/minima.hpp>
@@ -14,6 +17,7 @@
 using namespace Eigen;
 using namespace std;
 namespace odeint = boost::numeric::odeint;
+using json = nlohmann::json;
 
 // Checks whether combined contact criterion of access == 1 (satellite is
 // inside cone drawn by ground station FOV) and distance < 1.5e6 m
@@ -269,22 +273,94 @@ Matrix<double, 15, 1> rhs(
     return state_derivative;
 };
 
-int main()
+int main(int argc, char* argv[])
 {
-    // Create an instance of ConfigParser with the path to your config.json
-    Config config(string(BUILD_OUTPUT_PATH) + "/config.json");
-
-    // Generate discrete time points using the function
-    std::vector<std::chrono::_V2::system_clock::time_point> date_times = DateTime::generateTimePoints(config.getStartDateTime(), config.getEndDateTime(), config.getControlTimeStep());
-
-    // Output the time points
-    cout << "Executing simulation" << endl;
-    cout << "====================" << endl;
-    cout << "Start date: " << DateTime::formatTime(date_times.at(0)) << endl;
-
+    // Get simulation_id from command-line argument
+    if (argc < 2) {
+        cerr << "Usage: " << argv[0] << " <simulation_id>" << endl;
+        cerr << "Example: " << argv[0] << " 123e4567-e89b-12d3-a456-426614174000" << endl;
+        return 1;
+    }
+    
+    std::string simulation_id = argv[1];
+    
+    // Get database connection string from environment variable
+    const char* db_url = std::getenv("DATABASE_URL");
+    if (!db_url) {
+        cerr << "Error: DATABASE_URL environment variable not set" << endl;
+        cerr << "Please set DATABASE_URL environment variable" << endl;
+        cerr << "Example: export DATABASE_URL=\"postgresql://user:pass@localhost/dbname\"" << endl;
+        return 1;
+    }
+    
+    std::string connection_string = db_url;
+    
+    // Initialize database connection
+    Database* db = nullptr;
+    try {
+        db = new Database(connection_string);
+        if (!db->testConnection()) {
+            cerr << "Error: Failed to connect to database" << endl;
+            delete db;
+            return 1;
+        }
+    } catch (const std::exception& e) {
+        cerr << "Error connecting to database: " << e.what() << endl;
+        return 1;
+    }
+    
     try
     {
-        TLE tle = TLE::fromFile(string(BUILD_OUTPUT_PATH) + "/tle.txt");
+        // TEMPORARY: Read simulation parameters from files and write to database
+        // This will be replaced by webapp saving params to database
+        cout << "Reading simulation parameters from files..." << endl;
+        
+        // Read config.json from resources directory
+        std::ifstream config_file("resources/config.json");
+        if (!config_file.is_open()) {
+            throw std::runtime_error("Failed to open resources/config.json");
+        }
+        json config_json;
+        config_file >> config_json;
+        config_file.close();
+        
+        // Read tle.txt from resources directory
+        std::ifstream tle_file("resources/tle.txt");
+        if (!tle_file.is_open()) {
+            throw std::runtime_error("Failed to open resources/tle.txt");
+        }
+        std::string tle_line1, tle_line2;
+        std::getline(tle_file, tle_line1);
+        std::getline(tle_file, tle_line2);
+        tle_file.close();
+        
+        // Combine config and TLE into input_parameters JSON
+        json input_params = config_json;
+        input_params["tle_line1"] = tle_line1;
+        input_params["tle_line2"] = tle_line2;
+        
+        // Write to database
+        cout << "Writing simulation parameters to database..." << endl;
+        db->createOrUpdateSimulationParams(simulation_id, input_params);
+        
+        // Get simulation parameters from database
+        cout << "Loading simulation parameters for ID: " << simulation_id << endl;
+        SimulationParams params = db->getSimulationParams(simulation_id);
+        
+        // Update status to running
+        db->updateSimulationStatus(simulation_id, "running");
+        
+        // Generate discrete time points using the function
+        std::vector<std::chrono::_V2::system_clock::time_point> date_times = 
+            DateTime::generateTimePoints(params.start_date_time, params.end_date_time, params.control_time_step);
+
+        // Output the time points
+        cout << "Executing simulation" << endl;
+        cout << "====================" << endl;
+        cout << "Start date: " << DateTime::formatTime(date_times.at(0)) << endl;
+        
+        // Create TLE from database parameters
+        TLE tle(params.tle_line1, params.tle_line2);
 
         auto eccentricAnomalies = OrbitalMechanics::eccentricAnomaly(date_times, tle.getMeanAnomaly(), tle.getMeanMotion(), tle.getEccentricity(), tle.getEpoch());
         auto trueAnomalies = OrbitalMechanics::trueAnomaly(eccentricAnomalies, tle.getEccentricity());
@@ -303,9 +379,9 @@ int main()
         }
 
         auto [q_in, n_omega_n] = Frames::nadir_frame(m_i_r, m_i_v);
-        auto [q_it, t_omega_t, i_r_gs, i_v_gs] = Frames::target_pointing_frame(m_i_r, m_i_v, config.getGroundStationPosition(), date_times);
+        auto [q_it, t_omega_t, i_r_gs, i_v_gs] = Frames::target_pointing_frame(m_i_r, m_i_v, params.ground_station_lla, date_times);
 
-        auto [elevation, access] = visibility(m_i_r, i_r_gs, MathHelpers::deg2rad(config.getGroundStationElevation()));
+        auto [elevation, access] = visibility(m_i_r, i_r_gs, MathHelpers::deg2rad(params.ground_station_elevation));
         auto distance = (i_r_gs - m_i_r).colwise().norm();
         // contact_check(access, distance, date_times);
 
@@ -383,7 +459,7 @@ int main()
 
         auto cost_function = [&](const double time, const Vector2d &initial_state, const double command, const double commanded_torque) -> double
         {
-            return ActuatorCostFunction(actuator, time, initial_state, command, std::chrono::duration<double>(config.getControlTimeStep()).count(), commanded_torque);
+            return ActuatorCostFunction(actuator, time, initial_state, command, std::chrono::duration<double>(params.control_time_step).count(), commanded_torque);
         };
 
         double precision = 1e-2;
@@ -507,25 +583,74 @@ int main()
             euler_angles.col(i) = q_bc[i].toRotationMatrix().eulerAngles(2, 0, 2);
         }
 
-        // Save to file
-        auto ts = DateTime::getCurrentTimestamp();
-        DB::writematrix(euler_angles, "./output/" + ts, "euler_angles.csv");
-        DB::writematrix(ang_mom_body_frame, "./output/" + ts, "ang_mom_body_frame.csv");
-        DB::writematrix(a_control_torque * 1e3, "./output/" + ts, "a_control_torque.csv");
-        DB::writematrix(a_command, "./output/" + ts, "a_command.csv");
-        DB::writematrix(state, "./output/" + ts, "state.csv");
-        DB::writematrix(distance, "./output/" + ts, "distance.csv");
-        DB::serializeTimePointsToCSV(date_times, "./output/" + ts, "t.csv");
-
+        // Prepare metrics for database
+        std::cout << "Preparing metrics for database storage..." << std::endl;
+        std::vector<SimulationMetric> metrics;
+        metrics.reserve(date_times.size());
+        
+        // Convert a_control_torque from Nm to mNm (multiply by 1e3) for storage
+        Matrix4Xd a_control_torque_mNm = a_control_torque * 1e3;
+        
+        for (size_t i = 0; i < date_times.size(); i++)
+        {
+            SimulationMetric metric;
+            metric.step_index = static_cast<int>(i);
+            metric.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                date_times[i].time_since_epoch()).count();
+            
+            // Extract Euler angles (3 values)
+            metric.euler_angles = euler_angles.col(i);
+            
+            // Extract angular momentum in body frame (3 values)
+            metric.ang_mom_body_frame = ang_mom_body_frame.col(i);
+            
+            // Extract control torque (4 values, already in mNm)
+            metric.a_control_torque = a_control_torque_mNm.col(i);
+            
+            // Extract actuator commands (4 values)
+            metric.a_command = a_command.col(i);
+            
+            // Extract state (15 values)
+            metric.state = state.col(i);
+            
+            // Extract distance (scalar)
+            metric.distance = distance(i);
+            
+            metrics.push_back(metric);
+        }
+        
+        // Write metrics to database in batches
+        std::cout << "Writing " << metrics.size() << " metrics to database..." << std::endl;
+        const size_t BATCH_SIZE = 1000;
+        for (size_t i = 0; i < metrics.size(); i += BATCH_SIZE)
+        {
+            size_t end = std::min(i + BATCH_SIZE, metrics.size());
+            std::vector<SimulationMetric> batch(metrics.begin() + i, metrics.begin() + end);
+            db->writeMetrics(simulation_id, batch);
+            std::cout << "Written " << end << " / " << metrics.size() << " metrics" << std::endl;
+        }
+        
+        // Update status to completed
+        db->updateSimulationStatus(simulation_id, "completed");
+        
         std::cout << "First Date " << std::chrono::duration_cast<std::chrono::milliseconds>(date_times[0].time_since_epoch()).count() << std::endl;
         std::cout << "Last Date " << std::chrono::duration_cast<std::chrono::milliseconds>(date_times[date_times.size() - 1].time_since_epoch()).count() << std::endl;
-
-        std::cout << "Data saved to output.txt" << std::endl;
+        std::cout << "Simulation completed and data saved to database!" << std::endl;
     }
-    catch (const exception &e)
+    catch (const std::exception &e)
     {
         cerr << "Error: " << e.what() << endl;
+        if (db) {
+            try {
+                db->updateSimulationStatus(simulation_id, "failed", e.what());
+            } catch (...) {
+                // Ignore errors when updating failed status
+            }
+        }
+        if (db) delete db;
         return 1;
     }
+    
+    if (db) delete db;
     return 0;
 }
