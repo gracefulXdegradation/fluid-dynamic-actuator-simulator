@@ -53,7 +53,6 @@ const SimulationPage = () => {
 
   // Prepare data for plotting
   const { t, a_control_torque, a_command, ang_mom_body_frame, euler_angles, state, d } = data;
-
   
   const angularRate = state.slice(4,7).map((data: number[]) => data.map(rad2deg));
   const angularRateAbs = angularRate[0].map((_, i) => Math.pow(angularRate[0][i], 2) + Math.pow(angularRate[1][i], 2) + Math.pow(angularRate[2][i],2) )
