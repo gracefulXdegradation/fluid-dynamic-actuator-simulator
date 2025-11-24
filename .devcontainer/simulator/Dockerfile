@@ -20,4 +20,10 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     libpqxx-dev \
     libpq-dev \
     libhiredis-dev \
+    postgresql-client \
+    redis-tools \
     pkg-config
+
+# Copy startup script
+COPY start.sh /usr/local/bin/start-simulator.sh
+RUN chmod +x /usr/local/bin/start-simulator.sh

@@ -4,5 +4,10 @@
 	"service": "simulator",
 	"shutdownAction": "none",
 	"workspaceFolder": "/workspace/simulator",
-	"postCreateCommand": "cmake -S . -B build && cmake --build ${containerWorkspaceFolder}/build && sudo ${containerWorkspaceFolder}/build/bin/job_processor"
+	"postCreateCommand": "cmake -S . -B build && cmake --build ${containerWorkspaceFolder}/build",
+	"postAttachCommand": "${containerWorkspaceFolder}/build/bin/job_processor",
+	"containerEnv": {
+		"DATABASE_URL": "postgresql://fds_user:fds_password@postgres:5432/fds_db",
+		"REDIS_URL": "redis://redis:6379"
+	}
 }

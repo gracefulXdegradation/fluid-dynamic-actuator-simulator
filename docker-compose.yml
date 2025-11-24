@@ -38,7 +38,7 @@ services:
     environment:
       DATABASE_URL: postgresql://fds_user:fds_password@postgres:5432/fds_db
       REDIS_URL: redis://redis:6379
-    command: sleep infinity
+    command: /usr/local/bin/start-simulator.sh
     depends_on:
       postgres:
         condition: service_healthy
@@ -52,10 +52,11 @@ services:
     volumes:
       - .:/workspace:cached
       - shared-data:/data/fds
+    working_dir: /workspace/web-app
     environment:
       DATABASE_URL: postgresql://fds_user:fds_password@postgres:5432/fds_db
       REDIS_URL: redis://redis:6379
-    command: sleep infinity
+    command: sh -c "npm install && npm run dev"
     depends_on:
       postgres:
         condition: service_healthy
