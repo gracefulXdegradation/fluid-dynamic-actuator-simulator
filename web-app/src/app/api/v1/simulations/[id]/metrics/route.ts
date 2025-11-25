@@ -42,7 +42,7 @@ export async function GET(
       a_command: transpose(metrics.map(m => m.a_command)),
       state: transpose(metrics.map(m => m.state)),
       d: [metrics.map(m => m.distance)], // Single series, wrap in array
-      t: [metrics.map(m => m.timestamp)], // Single series, wrap in array
+      t: [metrics.map(m => parseInt(m.timestamp, 10))], // Single series, wrap in array
     };
     
     return NextResponse.json(transformed);

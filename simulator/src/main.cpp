@@ -311,38 +311,6 @@ int main(int argc, char* argv[])
     
     try
     {
-        // TEMPORARY: Read simulation parameters from files and write to database
-        // This will be replaced by webapp saving params to database
-        cout << "Reading simulation parameters from files..." << endl;
-        
-        // Read config.json from resources directory
-        std::ifstream config_file("resources/config.json");
-        if (!config_file.is_open()) {
-            throw std::runtime_error("Failed to open resources/config.json");
-        }
-        json config_json;
-        config_file >> config_json;
-        config_file.close();
-        
-        // Read tle.txt from resources directory
-        std::ifstream tle_file("resources/tle.txt");
-        if (!tle_file.is_open()) {
-            throw std::runtime_error("Failed to open resources/tle.txt");
-        }
-        std::string tle_line1, tle_line2;
-        std::getline(tle_file, tle_line1);
-        std::getline(tle_file, tle_line2);
-        tle_file.close();
-        
-        // Combine config and TLE into input_parameters JSON
-        json input_params = config_json;
-        input_params["tle_line1"] = tle_line1;
-        input_params["tle_line2"] = tle_line2;
-        
-        // Write to database
-        cout << "Writing simulation parameters to database..." << endl;
-        db->createOrUpdateSimulationParams(simulation_id, input_params);
-        
         // Get simulation parameters from database
         cout << "Loading simulation parameters for ID: " << simulation_id << endl;
         SimulationParams params = db->getSimulationParams(simulation_id);

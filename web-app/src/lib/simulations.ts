@@ -31,7 +31,7 @@ export interface SimulationMetric {
   id: string;
   simulation_id: string;
   step_index: number;
-  timestamp: number; // milliseconds since epoch
+  timestamp: string; // milliseconds since epoch
   euler_angles: number[]; // [3]
   ang_mom_body_frame: number[]; // [3]
   a_control_torque: number[]; // [4]
