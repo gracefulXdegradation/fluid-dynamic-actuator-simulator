@@ -1,5 +1,5 @@
-import { query } from './db';
-import { randomUUID } from 'crypto';
+import { prisma } from './db';
+import { SimulationStatus as PrismaSimulationStatus, Prisma } from '@prisma/client';
 
 export type SimulationStatus = 'scheduled' | 'running' | 'completed' | 'failed';
 
@@ -44,41 +44,34 @@ export interface SimulationMetric {
 export async function createSimulation(
   inputParams: SimulationInputParams
 ): Promise<string> {
-  const simulationId = randomUUID();
+  const simulation = await prisma.simulation.create({
+    data: {
+      status: 'scheduled',
+      input_parameters: inputParams as unknown as Prisma.InputJsonValue,
+    },
+  });
   
-  await query(
-    `INSERT INTO simulations (id, status, input_parameters)
-     VALUES ($1, $2, $3)`,
-    [simulationId, 'scheduled', JSON.stringify(inputParams)]
-  );
-  
-  return simulationId;
+  return simulation.id;
 }
 
 // Get a simulation by ID
 export async function getSimulation(id: string): Promise<Simulation | null> {
-  const result = await query<Simulation>(
-    `SELECT 
-      id,
-      status,
-      created_at,
-      started_at,
-      completed_at,
-      input_parameters,
-      error_message
-     FROM simulations
-     WHERE id = $1`,
-    [id]
-  );
+  const simulation = await prisma.simulation.findUnique({
+    where: { id },
+  });
   
-  if (result.rows.length === 0) {
+  if (!simulation) {
     return null;
   }
   
-  const row = result.rows[0];
   return {
-    ...row,
-    input_parameters: row.input_parameters as SimulationInputParams,
+    id: simulation.id,
+    status: simulation.status as SimulationStatus,
+    created_at: simulation.created_at,
+    started_at: simulation.started_at,
+    completed_at: simulation.completed_at,
+    input_parameters: simulation.input_parameters as unknown as SimulationInputParams,
+    error_message: simulation.error_message,
   };
 }
 
@@ -86,30 +79,19 @@ export async function getSimulation(id: string): Promise<Simulation | null> {
 export async function listSimulations(
   status?: SimulationStatus
 ): Promise<Simulation[]> {
-  let sql = `SELECT 
-    id,
-    status,
-    created_at,
-    started_at,
-    completed_at,
-    input_parameters,
-    error_message
-   FROM simulations`;
+  const simulations = await prisma.simulation.findMany({
+    where: status ? { status: status as PrismaSimulationStatus } : undefined,
+    orderBy: { created_at: 'desc' },
+  });
   
-  const params: any[] = [];
-  
-  if (status) {
-    sql += ' WHERE status = $1';
-    params.push(status);
-  }
-  
-  sql += ' ORDER BY created_at DESC';
-  
-  const result = await query<Simulation>(sql, params);
-  
-  return result.rows.map((row) => ({
-    ...row,
-    input_parameters: row.input_parameters as SimulationInputParams,
+  return simulations.map((simulation) => ({
+    id: simulation.id,
+    status: simulation.status as SimulationStatus,
+    created_at: simulation.created_at,
+    started_at: simulation.started_at,
+    completed_at: simulation.completed_at,
+    input_parameters: simulation.input_parameters as unknown as SimulationInputParams,
+    error_message: simulation.error_message,
   }));
 }
 
@@ -117,34 +99,38 @@ export async function listSimulations(
 export async function getSimulationMetrics(
   simulationId: string
 ): Promise<SimulationMetric[]> {
-  const result = await query<SimulationMetric>(
-    `SELECT 
-      id,
-      simulation_id,
-      step_index,
-      timestamp,
-      euler_angles,
-      ang_mom_body_frame,
-      a_control_torque,
-      a_command,
-      state,
-      distance
-     FROM simulation_metrics
-     WHERE simulation_id = $1
-     ORDER BY step_index ASC`,
-    [simulationId]
-  );
+  const metrics = await prisma.simulationMetric.findMany({
+    where: { simulation_id: simulationId },
+    orderBy: { step_index: 'asc' },
+  });
   
-  return result.rows;
+  return metrics.map((metric) => ({
+    id: metric.id,
+    simulation_id: metric.simulation_id,
+    step_index: metric.step_index,
+    timestamp: metric.timestamp.toString(), // Convert BigInt to string
+    euler_angles: metric.euler_angles,
+    ang_mom_body_frame: metric.ang_mom_body_frame,
+    a_control_torque: metric.a_control_torque,
+    a_command: metric.a_command,
+    state: metric.state,
+    distance: metric.distance,
+  }));
 }
 
 // Delete a simulation (and its metrics via CASCADE)
 export async function deleteSimulation(id: string): Promise<boolean> {
-  const result = await query(
-    'DELETE FROM simulations WHERE id = $1',
-    [id]
-  );
-  
-  return result.rowCount !== null && result.rowCount > 0;
+  try {
+    await prisma.simulation.delete({
+      where: { id },
+    });
+    return true;
+  } catch (error) {
+    // Prisma throws P2025 if record not found
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
+      return false;
+    }
+    throw error;
+  }
 }
 

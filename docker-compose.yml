@@ -34,7 +34,6 @@ services:
       dockerfile: Dockerfile
     volumes:
       - .:/workspace:cached
-      - shared-data:/workspace/simulator/output
     environment:
       DATABASE_URL: postgresql://fds_user:fds_password@postgres:5432/fds_db
       REDIS_URL: redis://redis:6379
@@ -51,7 +50,6 @@ services:
     image: mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm
     volumes:
       - .:/workspace:cached
-      - shared-data:/data/fds
     working_dir: /workspace/web-app
     environment:
       DATABASE_URL: postgresql://fds_user:fds_password@postgres:5432/fds_db
@@ -66,6 +64,5 @@ services:
       - "3000:3000"
 
 volumes:
-  shared-data:
   postgres-data:
   redis-data:

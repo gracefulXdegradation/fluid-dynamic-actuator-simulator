@@ -1,0 +1,58 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SimulationStatus {
+  scheduled
+  running
+  completed
+  failed
+
+  @@map("simulation_status")
+}
+
+model Simulation {
+  id              String            @id @default(uuid()) @db.Uuid
+  status          SimulationStatus  @default(scheduled)
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  started_at      DateTime?         @db.Timestamptz(6)
+  completed_at    DateTime?         @db.Timestamptz(6)
+  input_parameters Json             @db.JsonB
+  error_message   String?
+  
+  metrics         SimulationMetric[]
+
+  @@index([status])
+  @@index([created_at(sort: Desc)])
+  @@map("simulations")
+}
+
+model SimulationMetric {
+  id                  String   @id @default(uuid()) @db.Uuid
+  simulation_id       String   @db.Uuid
+  step_index          Int
+  timestamp           BigInt   @db.BigInt
+  euler_angles        Float[]
+  ang_mom_body_frame  Float[]
+  a_control_torque    Float[]
+  a_command          Float[]
+  state              Float[]
+  distance            Float    @db.DoublePrecision
+
+  simulation         Simulation @relation(fields: [simulation_id], references: [id], onDelete: Cascade)
+
+  @@unique([simulation_id, step_index])
+  @@index([simulation_id])
+  @@index([simulation_id, step_index])
+  @@map("simulation_metrics")
+}
+
