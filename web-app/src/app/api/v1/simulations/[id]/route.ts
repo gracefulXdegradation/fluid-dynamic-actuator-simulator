@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSimulation, getSimulationMetrics, deleteSimulation } from '@/lib/simulations';
+import { getSimulation, deleteSimulation } from '@/lib/simulations';
 
 // GET /api/v1/simulations/[id] - Get simulation details
 export async function GET(

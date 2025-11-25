@@ -109,7 +109,8 @@ export default function NewSimulationPage() {
               border: '1px solid #d1d5db',
               borderRadius: '0.375rem',
               fontFamily: 'monospace',
-              fontSize: '0.875rem'
+              fontSize: '0.875rem',
+              color: '#000000',
             }}
             placeholder="1 44412U 19038AC  23177.36594369  .00027390  00000+0  92824-3 0  9999"
           />
@@ -131,7 +132,8 @@ export default function NewSimulationPage() {
               border: '1px solid #d1d5db',
               borderRadius: '0.375rem',
               fontFamily: 'monospace',
-              fontSize: '0.875rem'
+              fontSize: '0.875rem',
+              color: '#000000',
             }}
             placeholder="2 44412  97.6739 158.3078 0012642 270.3777  89.6015 15.30455419219567"
           />
@@ -152,7 +154,8 @@ export default function NewSimulationPage() {
                 width: '100%',
                 padding: '0.5rem',
                 border: '1px solid #d1d5db',
-                borderRadius: '0.375rem'
+                borderRadius: '0.375rem',
+                color: '#000000',
               }}
             />
           </div>
@@ -171,7 +174,8 @@ export default function NewSimulationPage() {
                 width: '100%',
                 padding: '0.5rem',
                 border: '1px solid #d1d5db',
-                borderRadius: '0.375rem'
+                borderRadius: '0.375rem',
+                color: '#000000',
               }}
             />
           </div>
@@ -192,7 +196,8 @@ export default function NewSimulationPage() {
               width: '100%',
               padding: '0.5rem',
               border: '1px solid #d1d5db',
-              borderRadius: '0.375rem'
+              borderRadius: '0.375rem',
+              color: '#000000',
             }}
           />
         </div>
@@ -216,7 +221,8 @@ export default function NewSimulationPage() {
                   width: '100%',
                   padding: '0.5rem',
                   border: '1px solid #d1d5db',
-                  borderRadius: '0.375rem'
+                  borderRadius: '0.375rem',
+                  color: '#000000',
                 }}
               />
             </div>
@@ -236,7 +242,8 @@ export default function NewSimulationPage() {
                   width: '100%',
                   padding: '0.5rem',
                   border: '1px solid #d1d5db',
-                  borderRadius: '0.375rem'
+                  borderRadius: '0.375rem',
+                  color: '#000000',
                 }}
               />
             </div>
@@ -256,7 +263,8 @@ export default function NewSimulationPage() {
                   width: '100%',
                   padding: '0.5rem',
                   border: '1px solid #d1d5db',
-                  borderRadius: '0.375rem'
+                  borderRadius: '0.375rem',
+                  color: '#000000',
                 }}
               />
             </div>
@@ -279,7 +287,8 @@ export default function NewSimulationPage() {
                 width: '100%',
                 padding: '0.5rem',
                 border: '1px solid #d1d5db',
-                borderRadius: '0.375rem'
+                borderRadius: '0.375rem',
+                color: '#000000',
               }}
             />
           </div>
@@ -294,7 +303,8 @@ export default function NewSimulationPage() {
               border: '1px solid #d1d5db',
               borderRadius: '0.375rem',
               backgroundColor: 'white',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              color: '#000000',
             }}
           >
             Cancel
