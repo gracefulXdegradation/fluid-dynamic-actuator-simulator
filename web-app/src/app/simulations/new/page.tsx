@@ -1,6 +1,12 @@
 "use client"
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function NewSimulationPage() {
   const router = useRouter();
@@ -50,7 +56,6 @@ export default function NewSimulationPage() {
         throw new Error(errorData.error || 'Failed to create simulation');
       }
 
-      const data = await response.json();
       // Redirect to the simulation list page
       router.push('/');
     } catch (err) {
@@ -76,256 +81,189 @@ export default function NewSimulationPage() {
   };
 
   return (
-    <div className="page-container" style={{ maxWidth: '800px', margin: '0 auto' }}>
-      <h1>Create New Simulation</h1>
-      
-      {error && (
-        <div style={{
-          padding: '1rem',
-          marginBottom: '1rem',
-          backgroundColor: '#fee2e2',
-          color: '#991b1b',
-          borderRadius: '0.5rem',
-          border: '1px solid #fecaca'
-        }}>
-          {error}
-        </div>
-      )}
+    <div className="page-container">
+      <div className="w-full max-w-3xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6">Create New Simulation</h1>
+        
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        <div>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-            TLE Line 1 *
-          </label>
-          <textarea
-            name="tle_line1"
-            value={formData.tle_line1}
-            onChange={handleChange}
-            required
-            rows={2}
-            style={{
-              width: '100%',
-              padding: '0.5rem',
-              border: '1px solid #d1d5db',
-              borderRadius: '0.375rem',
-              fontFamily: 'monospace',
-              fontSize: '0.875rem',
-              color: '#000000',
-            }}
-            placeholder="1 44412U 19038AC  23177.36594369  .00027390  00000+0  92824-3 0  9999"
-          />
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Simulation Details</CardTitle>
+            <CardDescription>Enter the parameters for your new simulation</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="tle_line1">
+                  TLE Line 1 *
+                </Label>
+                <Textarea
+                  id="tle_line1"
+                  name="tle_line1"
+                  value={formData.tle_line1}
+                  onChange={handleChange}
+                  required
+                  rows={1}
+                  className="font-mono text-sm"
+                  placeholder="1 44412U 19038AC  23177.36594369  .00027390  00000+0  92824-3 0  9999"
+                />
+              </div>
 
-        <div>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-            TLE Line 2 *
-          </label>
-          <textarea
-            name="tle_line2"
-            value={formData.tle_line2}
-            onChange={handleChange}
-            required
-            rows={2}
-            style={{
-              width: '100%',
-              padding: '0.5rem',
-              border: '1px solid #d1d5db',
-              borderRadius: '0.375rem',
-              fontFamily: 'monospace',
-              fontSize: '0.875rem',
-              color: '#000000',
-            }}
-            placeholder="2 44412  97.6739 158.3078 0012642 270.3777  89.6015 15.30455419219567"
-          />
-        </div>
+              <div className="space-y-2">
+                <Label htmlFor="tle_line2">
+                  TLE Line 2 *
+                </Label>
+                <Textarea
+                  id="tle_line2"
+                  name="tle_line2"
+                  value={formData.tle_line2}
+                  onChange={handleChange}
+                  required
+                  rows={1}
+                  className="font-mono text-sm"
+                  placeholder="2 44412  97.6739 158.3078 0012642 270.3777  89.6015 15.30455419219567"
+                />
+              </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-              Start Date/Time *
-            </label>
-            <input
-              type="datetime-local"
-              name="start_date_time"
-              value={formData.start_date_time || formatDateTime(now)}
-              onChange={handleChange}
-              required
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.375rem',
-                color: '#000000',
-              }}
-            />
-          </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="start_date_time">
+                    Start Date/Time *
+                  </Label>
+                  <Input
+                    id="start_date_time"
+                    type="datetime-local"
+                    name="start_date_time"
+                    value={formData.start_date_time || formatDateTime(now)}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-              End Date/Time *
-            </label>
-            <input
-              type="datetime-local"
-              name="end_date_time"
-              value={formData.end_date_time || formatDateTime(later)}
-              onChange={handleChange}
-              required
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.375rem',
-                color: '#000000',
-              }}
-            />
-          </div>
-        </div>
+                <div className="space-y-2">
+                  <Label htmlFor="end_date_time">
+                    End Date/Time *
+                  </Label>
+                  <Input
+                    id="end_date_time"
+                    type="datetime-local"
+                    name="end_date_time"
+                    value={formData.end_date_time || formatDateTime(later)}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+              </div>
 
-        <div>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-            Control Time Step (milliseconds) *
-          </label>
-          <input
-            type="number"
-            name="control_time_step"
-            value={formData.control_time_step}
-            onChange={handleChange}
-            required
-            min="1"
-            style={{
-              width: '100%',
-              padding: '0.5rem',
-              border: '1px solid #d1d5db',
-              borderRadius: '0.375rem',
-              color: '#000000',
-            }}
-          />
-        </div>
+              <div className="space-y-2">
+                <Label htmlFor="control_time_step">
+                  Control Time Step (milliseconds) *
+                </Label>
+                <Input
+                  id="control_time_step"
+                  type="number"
+                  name="control_time_step"
+                  value={formData.control_time_step}
+                  onChange={handleChange}
+                  required
+                  min="1"
+                />
+              </div>
 
-        <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Ground Station</h2>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                Latitude (degrees) *
-              </label>
-              <input
-                type="number"
-                name="ground_station_lat"
-                value={formData.ground_station_lat}
-                onChange={handleChange}
-                required
-                step="any"
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.375rem',
-                  color: '#000000',
-                }}
-              />
-            </div>
+              <div className="border-t pt-6 space-y-6">
+                <div>
+                  <h2 className="text-xl font-semibold mb-4">Ground Station</h2>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="ground_station_lat">
+                        Latitude (degrees) *
+                      </Label>
+                      <Input
+                        id="ground_station_lat"
+                        type="number"
+                        name="ground_station_lat"
+                        value={formData.ground_station_lat}
+                        onChange={handleChange}
+                        required
+                        step="any"
+                      />
+                    </div>
 
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                Longitude (degrees) *
-              </label>
-              <input
-                type="number"
-                name="ground_station_lon"
-                value={formData.ground_station_lon}
-                onChange={handleChange}
-                required
-                step="any"
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.375rem',
-                  color: '#000000',
-                }}
-              />
-            </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="ground_station_lon">
+                        Longitude (degrees) *
+                      </Label>
+                      <Input
+                        id="ground_station_lon"
+                        type="number"
+                        name="ground_station_lon"
+                        value={formData.ground_station_lon}
+                        onChange={handleChange}
+                        required
+                        step="any"
+                      />
+                    </div>
 
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                Altitude (meters) *
-              </label>
-              <input
-                type="number"
-                name="ground_station_alt"
-                value={formData.ground_station_alt}
-                onChange={handleChange}
-                required
-                step="any"
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.375rem',
-                  color: '#000000',
-                }}
-              />
-            </div>
-          </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="ground_station_alt">
+                        Altitude (meters) *
+                      </Label>
+                      <Input
+                        id="ground_station_alt"
+                        type="number"
+                        name="ground_station_alt"
+                        value={formData.ground_station_alt}
+                        onChange={handleChange}
+                        required
+                        step="any"
+                      />
+                    </div>
+                  </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-              Elevation Angle (degrees) *
-            </label>
-            <input
-              type="number"
-              name="ground_station_elevation"
-              value={formData.ground_station_elevation}
-              onChange={handleChange}
-              required
-              step="any"
-              min="0"
-              max="180"
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.375rem',
-                color: '#000000',
-              }}
-            />
-          </div>
-        </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ground_station_elevation">
+                      Elevation Angle (degrees) *
+                    </Label>
+                    <Input
+                      id="ground_station_elevation"
+                      type="number"
+                      name="ground_station_elevation"
+                      value={formData.ground_station_elevation}
+                      onChange={handleChange}
+                      required
+                      step="any"
+                      min="0"
+                      max="180"
+                    />
+                  </div>
+                </div>
+              </div>
 
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
-          <button
-            type="button"
-            onClick={() => router.back()}
-            style={{
-              padding: '0.5rem 1.5rem',
-              border: '1px solid #d1d5db',
-              borderRadius: '0.375rem',
-              backgroundColor: 'white',
-              cursor: 'pointer',
-              color: '#000000',
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              padding: '0.5rem 1.5rem',
-              backgroundColor: loading ? '#9ca3af' : '#0070f3',
-              color: 'white',
-              border: 'none',
-              borderRadius: '0.375rem',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              fontWeight: '500'
-            }}
-          >
-            {loading ? 'Creating...' : 'Create Simulation'}
-          </button>
-        </div>
-      </form>
+              <div className="flex gap-4 justify-end pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.back()}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                >
+                  {loading ? 'Creating...' : 'Create Simulation'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
