@@ -31,7 +31,7 @@ export interface SimulationMetric {
   id: string;
   simulation_id: string;
   step_index: number;
-  timestamp: string; // milliseconds since epoch
+  timestamp: number; // milliseconds since epoch
   euler_angles: number[]; // [3]
   ang_mom_body_frame: number[]; // [3]
   a_control_torque: number[]; // [4]
@@ -108,7 +108,7 @@ export async function getSimulationMetrics(
     id: metric.id,
     simulation_id: metric.simulation_id,
     step_index: metric.step_index,
-    timestamp: metric.timestamp.toString(), // Convert BigInt to string
+    timestamp: Number(metric.timestamp), // Convert BigInt to string
     euler_angles: metric.euler_angles,
     ang_mom_body_frame: metric.ang_mom_body_frame,
     a_control_torque: metric.a_control_torque,
