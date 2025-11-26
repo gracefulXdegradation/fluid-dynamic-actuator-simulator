@@ -11,16 +11,22 @@
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "@radix-ui/react-slot": "^1.2.4",
     "@types/pg": "^8.15.6",
     "@types/uuid": "^11.0.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "csv-parse": "^5.5.6",
     "d3": "^7.9.0",
     "ioredis": "^5.8.2",
+    "lucide-react": "^0.555.0",
     "next": "14.2.18",
     "pg": "^8.16.3",
     "prisma": "^5.22.0",
     "react": "^18",
     "react-dom": "^18",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7",
     "uuid": "^13.0.0"
   },
   "devDependencies": {

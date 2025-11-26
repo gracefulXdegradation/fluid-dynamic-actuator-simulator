@@ -1,6 +1,18 @@
 "use client"
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type SimulationStatus = 'scheduled' | 'running' | 'completed' | 'failed';
 
@@ -42,18 +54,18 @@ const SimulationsPage = () => {
     return () => clearInterval(interval); // Clean up on unmount
   }, []);
 
-  const getStatusColor = (status: SimulationStatus) => {
+  const getStatusBadgeProps = (status: SimulationStatus) => {
     switch (status) {
       case 'scheduled':
-        return 'text-blue-600 bg-blue-100';
+        return { variant: 'secondary' as const, className: 'bg-blue-100 text-blue-600 hover:bg-blue-100' };
       case 'running':
-        return 'text-yellow-600 bg-yellow-100';
+        return { variant: 'default' as const, className: 'bg-yellow-100 text-yellow-600 hover:bg-yellow-100' };
       case 'completed':
-        return 'text-green-600 bg-green-100';
+        return { variant: 'default' as const, className: 'bg-green-100 text-green-600 hover:bg-green-100' };
       case 'failed':
-        return 'text-red-600 bg-red-100';
+        return { variant: 'destructive' as const };
       default:
-        return 'text-gray-600 bg-gray-100';
+        return { variant: 'outline' as const };
     }
   };
 
@@ -64,102 +76,90 @@ const SimulationsPage = () => {
 
   return (
     <div className="page-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1>Simulations</h1>
-        <Link 
-          href="/simulations/new"
-          style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: '#0070f3',
-            color: 'white',
-            borderRadius: '0.5rem',
-            textDecoration: 'none',
-            fontWeight: '500'
-          }}
-        >
-          + New Simulation
-        </Link>
+      <div className="flex justify-between items-center mb-8 w-full max-w-7xl">
+        <h1 className="text-2xl font-bold">Simulations</h1>
+        <Button asChild>
+          <Link href="/simulations/new">
+            + New Simulation
+          </Link>
+        </Button>
       </div>
       
       {loading ? (
-        <div className="loading-indicator"/>
-      ) : simulations.length > 0 ? (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-                <th style={{ padding: '0.75rem', textAlign: 'left' }}>ID</th>
-                <th style={{ padding: '0.75rem', textAlign: 'left' }}>Status</th>
-                <th style={{ padding: '0.75rem', textAlign: 'left' }}>Created</th>
-                <th style={{ padding: '0.75rem', textAlign: 'left' }}>Started</th>
-                <th style={{ padding: '0.75rem', textAlign: 'left' }}>Completed</th>
-                <th style={{ padding: '0.75rem', textAlign: 'left' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {simulations.map((sim) => (
-                <tr key={sim.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                  <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.875rem' }}>
-                    {sim.id.substring(0, 8)}...
-                  </td>
-                  <td style={{ padding: '0.75rem' }}>
-                    <span 
-                      style={{
-                        padding: '0.25rem 0.75rem',
-                        borderRadius: '9999px',
-                        fontSize: '0.875rem',
-                        fontWeight: '500',
-                        display: 'inline-block'
-                      }}
-                      className={getStatusColor(sim.status)}
-                    >
-                      {sim.status}
-                    </span>
-                  </td>
-                  <td style={{ padding: '0.75rem', fontSize: '0.875rem' }}>
-                    {formatDate(sim.created_at)}
-                  </td>
-                  <td style={{ padding: '0.75rem', fontSize: '0.875rem' }}>
-                    {formatDate(sim.started_at)}
-                  </td>
-                  <td style={{ padding: '0.75rem', fontSize: '0.875rem' }}>
-                    {formatDate(sim.completed_at)}
-                  </td>
-                  <td style={{ padding: '0.75rem' }}>
-                    <Link 
-                      href={`/simulations/${sim.id}`}
-                      style={{
-                        color: '#0070f3',
-                        textDecoration: 'none',
-                        fontWeight: '500'
-                      }}
-                    >
-                      View
-                    </Link>
-                  </td>
-                </tr>
+        <Card className="w-full max-w-7xl">
+          <CardHeader>
+            <Skeleton className="h-8 w-48" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Skeleton key={i} className="h-16 w-full" />
               ))}
-            </tbody>
-          </table>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : simulations.length > 0 ? (
+        <Card className="w-full max-w-7xl">
+          <CardHeader>
+            <CardTitle>Simulations</CardTitle>
+            <CardDescription>View and manage your simulations</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Started</TableHead>
+                  <TableHead>Completed</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {simulations.map((sim) => (
+                  <TableRow key={sim.id}>
+                    <TableCell className="font-mono text-sm">
+                      {sim.id.substring(0, 8)}...
+                    </TableCell>
+                    <TableCell>
+                      <Badge {...getStatusBadgeProps(sim.status)}>
+                        {sim.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {formatDate(sim.created_at)}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {formatDate(sim.started_at)}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {formatDate(sim.completed_at)}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="link" asChild>
+                        <Link href={`/simulations/${sim.id}`}>
+                          View
+                        </Link>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       ) : (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>
-          <p>No simulations available.</p>
-          <Link 
-            href="/simulations/new"
-            style={{
-              display: 'inline-block',
-              marginTop: '1rem',
-              padding: '0.5rem 1rem',
-              backgroundColor: '#0070f3',
-              color: 'white',
-              borderRadius: '0.5rem',
-              textDecoration: 'none'
-            }}
-          >
-            Create your first simulation
-          </Link>
-        </div>
+        <Card className="w-full max-w-7xl">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <p className="text-muted-foreground mb-4">No simulations available.</p>
+            <Button asChild>
+              <Link href="/simulations/new">
+                Create your first simulation
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
