@@ -84,8 +84,6 @@ export default function NewSimulationPage() {
   return (
     <div className="page-container">
       <div className="w-full max-w-3xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Create New Simulation</h1>
-        
         {error && (
           <Alert variant="destructive" className="mb-6">
             <AlertDescription>{error}</AlertDescription>
@@ -94,7 +92,7 @@ export default function NewSimulationPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Simulation Details</CardTitle>
+            <CardTitle>New Simulation</CardTitle>
             <CardDescription>Enter the parameters for your new simulation</CardDescription>
           </CardHeader>
           <CardContent>

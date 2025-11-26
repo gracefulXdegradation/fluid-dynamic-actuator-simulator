@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlusIcon } from "lucide-react"
 
@@ -77,20 +77,21 @@ const SimulationsPage = () => {
 
   return (
     <div className="page-container">
-      <div className="flex justify-between items-center mb-8 w-full max-w-7xl">
-        <h1 className="text-2xl font-bold">Simulations</h1>
-        <Button variant="outline" size="icon" asChild>
-          <Link href="/simulations/new">
-          <PlusIcon />
-          </Link>
-        </Button>
-      </div>
-      
-      {loading ? (
-        <Card className="w-full max-w-7xl">
-          <CardHeader>
-            <Skeleton className="h-8 w-48" />
-          </CardHeader>
+      <Card className="w-full max-w-7xl">
+        <CardHeader>
+          <div className="flex flex-col space-y-1.5">
+            <CardTitle>Simulations</CardTitle>
+            <CardDescription>View and manage your simulations</CardDescription>
+          </div>
+          <CardAction>
+            <Button variant="outline" size="icon" asChild>
+              <Link href="/simulations/new">
+              <PlusIcon />
+              </Link>
+            </Button>
+          </CardAction>
+        </CardHeader>
+        {loading ? (
           <CardContent>
             <div className="space-y-4">
               {[1, 2, 3, 4, 5].map((i) => (
@@ -98,13 +99,7 @@ const SimulationsPage = () => {
               ))}
             </div>
           </CardContent>
-        </Card>
-      ) : simulations.length > 0 ? (
-        <Card className="w-full max-w-7xl">
-          <CardHeader>
-            <CardTitle>Simulations</CardTitle>
-            <CardDescription>View and manage your simulations</CardDescription>
-          </CardHeader>
+        ) : simulations.length > 0 ? (
           <CardContent>
             <Table>
               <TableHeader>
@@ -149,9 +144,7 @@ const SimulationsPage = () => {
               </TableBody>
             </Table>
           </CardContent>
-        </Card>
-      ) : (
-        <Card className="w-full max-w-7xl">
+        ) : (
           <CardContent className="flex flex-col items-center justify-center py-12">
             <p className="text-muted-foreground mb-4">No simulations available.</p>
             <Button asChild>
@@ -160,8 +153,8 @@ const SimulationsPage = () => {
               </Link>
             </Button>
           </CardContent>
-        </Card>
-      )}
+        )}
+      </Card>
     </div>
   );
 };
