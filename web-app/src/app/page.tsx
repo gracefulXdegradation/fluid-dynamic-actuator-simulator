@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PlusIcon } from "lucide-react"
 
 type SimulationStatus = 'scheduled' | 'running' | 'completed' | 'failed';
 
@@ -57,11 +58,11 @@ const SimulationsPage = () => {
   const getStatusBadgeProps = (status: SimulationStatus) => {
     switch (status) {
       case 'scheduled':
-        return { variant: 'secondary' as const, className: 'bg-blue-100 text-blue-600 hover:bg-blue-100' };
+        return { variant: 'secondary' as const, className: 'bg-blue-100 text-blue-600 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-900' };
       case 'running':
-        return { variant: 'default' as const, className: 'bg-yellow-100 text-yellow-600 hover:bg-yellow-100' };
+        return { variant: 'default' as const, className: 'bg-yellow-100 text-yellow-600 hover:bg-yellow-100 dark:bg-yellow-900 dark:text-yellow-300 dark:hover:bg-yellow-900' };
       case 'completed':
-        return { variant: 'default' as const, className: 'bg-green-100 text-green-600 hover:bg-green-100' };
+        return { variant: 'default' as const, className: 'bg-green-100 text-green-600 hover:bg-green-100 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-900' };
       case 'failed':
         return { variant: 'destructive' as const };
       default:
@@ -78,9 +79,9 @@ const SimulationsPage = () => {
     <div className="page-container">
       <div className="flex justify-between items-center mb-8 w-full max-w-7xl">
         <h1 className="text-2xl font-bold">Simulations</h1>
-        <Button asChild>
+        <Button variant="outline" size="icon" asChild>
           <Link href="/simulations/new">
-            + New Simulation
+          <PlusIcon />
           </Link>
         </Button>
       </div>

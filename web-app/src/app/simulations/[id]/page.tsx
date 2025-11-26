@@ -2,6 +2,9 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation'
 import LineGraph from '@/components/LineGraph';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const rad2deg = (rad: number) => rad * 180 / Math.PI;
 
@@ -43,12 +46,37 @@ const SimulationPage = () => {
 
   if (loading) {
     return (
-      <div className="loading-indicator"/>
+      <div className="page-container">
+        <div className="w-full max-w-7xl mx-auto">
+          <Skeleton className="h-8 w-32 mb-6" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+              <Card key={i}>
+                <CardHeader>
+                  <Skeleton className="h-6 w-48" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-64 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
     );
   }
 
   if (!data) {
-    return <p>No data available for this simulation.</p>;
+    return (
+      <div className="page-container">
+        <div className="w-full max-w-7xl mx-auto">
+          <h1 className="text-2xl font-bold mb-6">Simulation #{id}</h1>
+          <Alert variant="destructive">
+            <AlertDescription>No data available for this simulation.</AlertDescription>
+          </Alert>
+        </div>
+      </div>
+    );
   }
 
   // Prepare data for plotting
@@ -62,75 +90,107 @@ const SimulationPage = () => {
 
   return (
     <div className="page-container">
-      <h1>#{id}</h1>
-      <div className='graph-container'>
-        <div>
-          <h2>Required control torque</h2>
-          <LineGraph
-            timestamps={ts}
-            values={a_control_torque}
-            graphNames={["&tau;<sub>1</sub>", "&tau;<sub>2</sub>", "&tau;<sub>3</sub>", "&tau;<sub>4</sub>"]}
-            labelX="Time"
-            labelY="Torque [mNm]"
-          />
-        </div>
-        <div>
-          <h2>Body angular rate w.r.t. body frame</h2>
-          <LineGraph
-            timestamps={ts}
-            values={[...angularRate, angularRateAbs]}
-            graphNames={["<sub>b</sub>&omega;<sub>bx</sub>", "<sub>b</sub>&omega;<sub>by</sub>", "<sub>b</sub>&omega;<sub>bz</sub>", "|<sub>b</sub>&omega;<sub>b</sub>|"]}
-            labelX="Time"
-          />
-        </div>
-        <div>
-          <h2>Actuator angular momentum in actuator frame</h2>
-          <LineGraph
-            timestamps={ts}
-            values={angularMomentum}
-            graphNames={["h<sub>1</sub>", "h<sub>2</sub>", "h<sub>3</sub>", "h<sub>4</sub>"]}
-            labelX="Time"
-            labelY="Angular momentum [&mu;Nms]"
-          />
-        </div>
-        <div>
-          <h2>Actuator angular momentum in body frame</h2>
-          <LineGraph
-            timestamps={ts}
-            values={angularMomentumBodyFrame}
-            graphNames={["h<sub>x</sub>", "h<sub>y</sub>", "h<sub>z</sub>"]}
-            labelX="Time"
-            labelY="Angular momentum [&mu;Nms]"
-          />
-        </div>
-        <div>
-          <h2>Distance</h2>
-          <LineGraph
-            timestamps={ts}
-            values={d}
-            graphNames={["Distance"]}
-            labelX="Time"
-            labelY="Distance to the ground station [km]"
-          />
-        </div>
-        <div>
-          <h2>Attitude error angle</h2>
-          <LineGraph
-            timestamps={ts}
-            values={[euler_angles[1].map(rad => Math.min(Math.max(rad2deg(rad), 0), 0.2))]}
-            graphNames={["y"]}
-            labelX="Time"
-            labelY="Error angle [&deg;]"
-          />
-        </div>
-        <div>
-          <h2>Actuator commands</h2>
-          <LineGraph
-            timestamps={ts}
-            values={a_command}
-            graphNames={["&mu;<sub>1</sub>", "&mu;<sub>2</sub>", "&mu;<sub>3</sub>", "&mu;<sub>4</sub>"]}
-            labelX="Time"
-          />
+      <div className="w-full max-w-7xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6">Simulation #{id}</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Required control torque</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LineGraph
+                timestamps={ts}
+                values={a_control_torque}
+                graphNames={["&tau;<sub>1</sub>", "&tau;<sub>2</sub>", "&tau;<sub>3</sub>", "&tau;<sub>4</sub>"]}
+                labelX="Time"
+                labelY="Torque [mNm]"
+              />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Body angular rate w.r.t. body frame</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LineGraph
+                timestamps={ts}
+                values={[...angularRate, angularRateAbs]}
+                graphNames={["<sub>b</sub>&omega;<sub>bx</sub>", "<sub>b</sub>&omega;<sub>by</sub>", "<sub>b</sub>&omega;<sub>bz</sub>", "|<sub>b</sub>&omega;<sub>b</sub>|"]}
+                labelX="Time"
+                labelY=""
+              />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Actuator angular momentum in actuator frame</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LineGraph
+                timestamps={ts}
+                values={angularMomentum}
+                graphNames={["h<sub>1</sub>", "h<sub>2</sub>", "h<sub>3</sub>", "h<sub>4</sub>"]}
+                labelX="Time"
+                labelY="Angular momentum [&mu;Nms]"
+              />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Actuator angular momentum in body frame</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LineGraph
+                timestamps={ts}
+                values={angularMomentumBodyFrame}
+                graphNames={["h<sub>x</sub>", "h<sub>y</sub>", "h<sub>z</sub>"]}
+                labelX="Time"
+                labelY="Angular momentum [&mu;Nms]"
+              />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Distance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LineGraph
+                timestamps={ts}
+                values={d}
+                graphNames={["Distance"]}
+                labelX="Time"
+                labelY="Distance to the ground station [km]"
+              />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Attitude error angle</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LineGraph
+                timestamps={ts}
+                values={[euler_angles[1].map(rad => Math.min(Math.max(rad2deg(rad), 0), 0.2))]}
+                graphNames={["y"]}
+                labelX="Time"
+                labelY="Error angle [&deg;]"
+              />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Actuator commands</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LineGraph
+                timestamps={ts}
+                values={a_command}
+                graphNames={["&mu;<sub>1</sub>", "&mu;<sub>2</sub>", "&mu;<sub>3</sub>", "&mu;<sub>4</sub>"]}
+                labelX="Time"
+                labelY=""
+              />
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

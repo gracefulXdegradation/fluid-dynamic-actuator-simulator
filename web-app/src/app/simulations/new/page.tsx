@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
 
 export default function NewSimulationPage() {
   const router = useRouter();
@@ -248,16 +249,24 @@ export default function NewSimulationPage() {
               <div className="flex gap-4 justify-end pt-4">
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="secondary"
                   onClick={() => router.back()}
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
+                  variant="default"
                   disabled={loading}
                 >
-                  {loading ? 'Creating...' : 'Create Simulation'}
+                  {loading ? (
+                    <>
+                      <Spinner className="mr-2" />
+                      Creating...
+                    </>
+                  ) : (
+                    'Create Simulation'
+                  )}
                 </Button>
               </div>
             </form>
