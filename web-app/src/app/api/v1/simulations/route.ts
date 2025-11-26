@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSimulation, listSimulations, SimulationInputParams } from '@/lib/simulations';
+import { createSimulation, listSimulations, SimulationInputParams, SimulationStatus } from '@/lib/simulations';
 import { RedisClient } from '@/lib/redis';
 
 // GET /api/v1/simulations - List all simulations
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const status = searchParams.get('status') as any;
+    const status = searchParams.get('status') as SimulationStatus | undefined;
     
     const simulations = await listSimulations(status || undefined);
     

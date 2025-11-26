@@ -1,1 +1,0 @@
-This content of this folder is shared as a mounted volume with the web application. This is a temporary solution instead of using a fully fledged database.

@@ -127,7 +127,7 @@ const SimulationsPage = () => {
                   </td>
                   <td style={{ padding: '0.75rem' }}>
                     <Link 
-                      href={`/simulation/${sim.id}`}
+                      href={`/simulations/${sim.id}`}
                       style={{
                         color: '#0070f3',
                         textDecoration: 'none',
