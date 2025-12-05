@@ -1,6 +1,7 @@
 #include "JobProcessor.hpp"
 #include "Database.hpp"
 #include "RedisClient.hpp"
+#include "Logger.hpp"
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -32,15 +33,15 @@ JobProcessor::~JobProcessor() {
 
 void JobProcessor::start(int poll_interval_seconds) {
     if (running_) {
-        std::cerr << "JobProcessor is already running" << std::endl;
+        Logger::error("JobProcessor is already running");
         return;
     }
     
     running_ = true;
     should_stop_ = false;
     
-    std::cout << "JobProcessor started. Polling for jobs every " << poll_interval_seconds << " seconds..." << std::endl;
-    std::cout << "Press Ctrl+C to stop." << std::endl;
+    Logger::info("JobProcessor started. Polling for jobs every " + std::to_string(poll_interval_seconds) + " seconds...");
+    Logger::info("Press Ctrl+C to stop.");
     
     while (!should_stop_) {
         try {
@@ -48,20 +49,20 @@ void JobProcessor::start(int poll_interval_seconds) {
             std::string simulation_id = redis_->tryPopJob();
             
             if (!simulation_id.empty()) {
-                std::cout << "Found job: " << simulation_id << std::endl;
+                Logger::info("\nFound job: " + simulation_id);
                 processJob(simulation_id);
             } else {
                 // No job available, wait before polling again
                 std::this_thread::sleep_for(std::chrono::seconds(poll_interval_seconds));
             }
         } catch (const std::exception& e) {
-            std::cerr << "Error in job processing loop: " << e.what() << std::endl;
+            Logger::error("Error in job processing loop: " + std::string(e.what()));
             std::this_thread::sleep_for(std::chrono::seconds(poll_interval_seconds));
         }
     }
     
     running_ = false;
-    std::cout << "JobProcessor stopped." << std::endl;
+    Logger::info("JobProcessor stopped.");
 }
 
 void JobProcessor::stop() {
@@ -73,7 +74,7 @@ void JobProcessor::stop() {
 }
 
 void JobProcessor::processJob(const std::string& simulation_id) {
-    std::cout << "Processing simulation: " << simulation_id << std::endl;
+    Logger::info("Processing simulation: " + simulation_id);
     
     // Get the path to the simulator executable
     // Assuming it's in the same directory or we can find it via PATH
@@ -81,7 +82,7 @@ void JobProcessor::processJob(const std::string& simulation_id) {
     
     // Check if executable exists
     if (access(simulator_path, X_OK) != 0) {
-        std::cerr << "Error: Simulator executable not found at " << simulator_path << std::endl;
+        Logger::error("Error: Simulator executable not found at " + std::string(simulator_path));
         db_->updateSimulationStatus(simulation_id, "failed", "Simulator executable not found");
         return;
     }
@@ -90,7 +91,7 @@ void JobProcessor::processJob(const std::string& simulation_id) {
     pid_t pid = fork();
     
     if (pid < 0) {
-        std::cerr << "Error: Failed to fork process" << std::endl;
+        Logger::error("Error: Failed to fork process");
         db_->updateSimulationStatus(simulation_id, "failed", "Failed to fork process");
         return;
     }
@@ -106,7 +107,7 @@ void JobProcessor::processJob(const std::string& simulation_id) {
         execvp(simulator_path, args);
         
         // If execvp returns, it failed
-        std::cerr << "Error: Failed to execute simulator" << std::endl;
+        Logger::error("Error: Failed to execute simulator");
         exit(1);
     } else {
         // Parent process: wait for child to complete
@@ -116,15 +117,15 @@ void JobProcessor::processJob(const std::string& simulation_id) {
         if (WIFEXITED(status)) {
             int exit_code = WEXITSTATUS(status);
             if (exit_code == 0) {
-                std::cout << "Simulation " << simulation_id << " completed successfully" << std::endl;
+                Logger::info("Simulation " + simulation_id + " completed successfully");
                 // Status should already be updated to "completed" by the simulator
             } else {
-                std::cerr << "Simulation " << simulation_id << " failed with exit code " << exit_code << std::endl;
+                Logger::error("Simulation " + simulation_id + " failed with exit code " + std::to_string(exit_code));
                 // Status should already be updated to "failed" by the simulator
             }
         } else if (WIFSIGNALED(status)) {
             int signal = WTERMSIG(status);
-            std::cerr << "Simulation " << simulation_id << " was terminated by signal " << signal << std::endl;
+            Logger::error("Simulation " + simulation_id + " was terminated by signal " + std::to_string(signal));
             db_->updateSimulationStatus(simulation_id, "failed", "Process terminated by signal");
         }
     }

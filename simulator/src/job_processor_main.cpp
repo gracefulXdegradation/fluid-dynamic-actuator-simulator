@@ -2,12 +2,13 @@
 #include <cstdlib>
 #include <signal.h>
 #include "JobProcessor.hpp"
+#include "Logger.hpp"
 
 JobProcessor* g_job_processor = nullptr;
 
 void signalHandler(int signal) {
     if (g_job_processor) {
-        std::cout << "\nReceived signal " << signal << ", stopping job processor..." << std::endl;
+        Logger::info("\nReceived signal " + std::to_string(signal) + ", stopping job processor...");
         g_job_processor->stop();
     }
 }
@@ -18,12 +19,12 @@ int main(int argc, char* argv[]) {
     const char* redis_url = std::getenv("REDIS_URL");
     
     if (!db_url) {
-        std::cerr << "Error: DATABASE_URL environment variable not set" << std::endl;
+        Logger::error("Error: DATABASE_URL environment variable not set");
         return 1;
     }
     
     if (!redis_url) {
-        std::cerr << "Error: REDIS_URL environment variable not set" << std::endl;
+        Logger::error("Error: REDIS_URL environment variable not set");
         return 1;
     }
     
@@ -33,11 +34,11 @@ int main(int argc, char* argv[]) {
         try {
             poll_interval = std::stoi(argv[1]);
             if (poll_interval < 1) {
-                std::cerr << "Warning: Poll interval must be >= 1, using default 5 seconds" << std::endl;
+                Logger::error("Warning: Poll interval must be >= 1, using default 5 seconds");
                 poll_interval = 5;
             }
         } catch (...) {
-            std::cerr << "Warning: Invalid poll interval, using default 5 seconds" << std::endl;
+            Logger::error("Warning: Invalid poll interval, using default 5 seconds");
         }
     }
     
@@ -53,7 +54,7 @@ int main(int argc, char* argv[]) {
         processor.start(poll_interval);
         
     } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
+        Logger::error("Error: " + std::string(e.what()));
         return 1;
     }
     

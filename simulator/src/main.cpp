@@ -10,6 +10,7 @@
 #include "OrbitalMechanics.h"
 #include "DB.hpp"
 #include "Database.hpp"
+#include "Logger.hpp"
 #include <cmath>
 #include <boost/numeric/odeint.hpp>
 #include <boost/math/tools/minima.hpp>
@@ -67,7 +68,7 @@ std::pair<VectorXi, int64_t> contact_check(const VectorXi &access, const VectorX
 
     int64_t duration = std::chrono::duration_cast<std::chrono::seconds>(date_times[last_index] - date_times[first_index]).count();
 
-    std::cout << duration << std::endl;
+    Logger::info(std::to_string(duration));
 
     return std::make_pair(contact, duration);
 }
@@ -277,8 +278,8 @@ int main(int argc, char* argv[])
 {
     // Get simulation_id from command-line argument
     if (argc < 2) {
-        cerr << "Usage: " << argv[0] << " <simulation_id>" << endl;
-        cerr << "Example: " << argv[0] << " 123e4567-e89b-12d3-a456-426614174000" << endl;
+        Logger::error("Usage: " + std::string(argv[0]) + " <simulation_id>");
+        Logger::error("Example: " + std::string(argv[0]) + " 123e4567-e89b-12d3-a456-426614174000");
         return 1;
     }
     
@@ -287,9 +288,9 @@ int main(int argc, char* argv[])
     // Get database connection string from environment variable
     const char* db_url = std::getenv("DATABASE_URL");
     if (!db_url) {
-        cerr << "Error: DATABASE_URL environment variable not set" << endl;
-        cerr << "Please set DATABASE_URL environment variable" << endl;
-        cerr << "Example: export DATABASE_URL=\"postgresql://user:pass@localhost/dbname\"" << endl;
+        Logger::error("Error: DATABASE_URL environment variable not set");
+        Logger::error("Please set DATABASE_URL environment variable");
+        Logger::error("Example: export DATABASE_URL=\"postgresql://user:pass@localhost/dbname\"");
         return 1;
     }
     
@@ -300,19 +301,19 @@ int main(int argc, char* argv[])
     try {
         db = new Database(connection_string);
         if (!db->testConnection()) {
-            cerr << "Error: Failed to connect to database" << endl;
+            Logger::error("Error: Failed to connect to database");
             delete db;
             return 1;
         }
     } catch (const std::exception& e) {
-        cerr << "Error connecting to database: " << e.what() << endl;
+        Logger::error("Error connecting to database: " + std::string(e.what()));
         return 1;
     }
     
     try
     {
         // Get simulation parameters from database
-        cout << "Loading simulation parameters for ID: " << simulation_id << endl;
+        Logger::info("Loading simulation parameters for ID: " + simulation_id);
         SimulationParams params = db->getSimulationParams(simulation_id);
         
         // Update status to running
@@ -323,9 +324,8 @@ int main(int argc, char* argv[])
             DateTime::generateTimePoints(params.start_date_time, params.end_date_time, params.control_time_step);
 
         // Output the time points
-        cout << "Executing simulation" << endl;
-        cout << "====================" << endl;
-        cout << "Start date: " << DateTime::formatTime(date_times.at(0)) << endl;
+        Logger::info("Executing simulation");
+        Logger::info("Start date: " + DateTime::formatTime(date_times.at(0)));
         
         // Create TLE from database parameters
         TLE tle(params.tle_line1, params.tle_line2);
@@ -530,7 +530,7 @@ int main(int argc, char* argv[])
         {
             a_command(j, last_index) = command_finder(0.0, actuator_state.col(j), a_control_torque(j, last_index));
         }
-        std::cout << "Simulation complete!" << std::endl;
+        Logger::info("Simulation complete!");
 
         // Get angular momentum of actuator assembly in the body frame
         std::vector<int> indices = {7, 9, 11, 13};
@@ -552,7 +552,7 @@ int main(int argc, char* argv[])
         }
 
         // Prepare metrics for database
-        std::cout << "Preparing metrics for database storage..." << std::endl;
+        Logger::info("Preparing metrics for database storage...");
         std::vector<SimulationMetric> metrics;
         metrics.reserve(date_times.size());
         
@@ -588,26 +588,26 @@ int main(int argc, char* argv[])
         }
         
         // Write metrics to database in batches
-        std::cout << "Writing " << metrics.size() << " metrics to database..." << std::endl;
+        Logger::info("Writing " + std::to_string(metrics.size()) + " metrics to database...");
         const size_t BATCH_SIZE = 1000;
         for (size_t i = 0; i < metrics.size(); i += BATCH_SIZE)
         {
             size_t end = std::min(i + BATCH_SIZE, metrics.size());
             std::vector<SimulationMetric> batch(metrics.begin() + i, metrics.begin() + end);
             db->writeMetrics(simulation_id, batch);
-            std::cout << "Written " << end << " / " << metrics.size() << " metrics" << std::endl;
+            Logger::info("Written " + std::to_string(end) + " / " + std::to_string(metrics.size()) + " metrics");
         }
         
         // Update status to completed
         db->updateSimulationStatus(simulation_id, "completed");
         
-        std::cout << "First Date " << std::chrono::duration_cast<std::chrono::milliseconds>(date_times[0].time_since_epoch()).count() << std::endl;
-        std::cout << "Last Date " << std::chrono::duration_cast<std::chrono::milliseconds>(date_times[date_times.size() - 1].time_since_epoch()).count() << std::endl;
-        std::cout << "Simulation completed and data saved to database!" << std::endl;
+        Logger::info("First Date " + std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(date_times[0].time_since_epoch()).count()));
+        Logger::info("Last Date " + std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(date_times[date_times.size() - 1].time_since_epoch()).count()));
+        Logger::info("Simulation completed and data saved to database!");
     }
     catch (const std::exception &e)
     {
-        cerr << "Error: " << e.what() << endl;
+        Logger::error("Error: " + std::string(e.what()));
         if (db) {
             try {
                 db->updateSimulationStatus(simulation_id, "failed", e.what());

@@ -117,10 +117,16 @@ docker exec fds-postgres-1 psql -U fds_user -d fds_db -c "\dt"
 # Describe simulations table
 docker exec fds-postgres-1 psql -U fds_user -d fds_db -c "\d simulations"
 
+# Describe simulation_metrics table
+docker exec fds-postgres-1 psql -U fds_user -d fds_db -c "\d simulation_metrics"
+
 # Count simulations by status
 docker exec fds-postgres-1 psql -U fds_user -d fds_db -c "SELECT status, COUNT(*) FROM simulations GROUP BY status;"
 
 # View recent simulations
 docker exec fds-postgres-1 psql -U fds_user -d fds_db -c "SELECT id, status, created_at FROM simulations ORDER BY created_at DESC LIMIT 5;"
+
+# View the latest time stamps
+docker exec fds-postgres-1 psql -U fds_user -d fds_db -c "SELECT id, simulation_id, step_index, timestamp, euler_angles FROM simulation_metrics ORDER BY step_index DESC LIMIT 10;"
 ```
 
