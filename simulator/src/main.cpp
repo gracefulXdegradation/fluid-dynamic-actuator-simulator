@@ -551,51 +551,27 @@ int main(int argc, char* argv[])
             euler_angles.col(i) = q_bc[i].toRotationMatrix().eulerAngles(2, 0, 2);
         }
 
-        // Prepare metrics for database
-        Logger::info("Preparing metrics for database storage...");
-        std::vector<SimulationMetric> metrics;
-        metrics.reserve(date_times.size());
+        // Prepare timestamps and convert a_control_torque from Nm to mNm (multiply by 1e3) for storage
+        Logger::info("Preparing data for database storage...");
+        std::vector<int64_t> timestamps;
+        timestamps.reserve(date_times.size());
+        for (const auto& dt : date_times) {
+            timestamps.push_back(std::chrono::duration_cast<std::chrono::milliseconds>(
+                dt.time_since_epoch()).count());
+        }
         
         // Convert a_control_torque from Nm to mNm (multiply by 1e3) for storage
         Matrix4Xd a_control_torque_mNm = a_control_torque * 1e3;
         
-        for (size_t i = 0; i < date_times.size(); i++)
+        // Write metrics directly to database in batches
+        Logger::info("Writing " + std::to_string(date_times.size()) + " metrics to database...");
+        const size_t BATCH_SIZE = 10000; // Increased batch size since we're not creating intermediate objects
+        for (size_t i = 0; i < date_times.size(); i += BATCH_SIZE)
         {
-            SimulationMetric metric;
-            metric.step_index = static_cast<int>(i);
-            metric.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
-                date_times[i].time_since_epoch()).count();
-            
-            // Extract Euler angles (3 values)
-            metric.euler_angles = euler_angles.col(i);
-            
-            // Extract angular momentum in body frame (3 values)
-            metric.ang_mom_body_frame = ang_mom_body_frame.col(i);
-            
-            // Extract control torque (4 values, already in mNm)
-            metric.a_control_torque = a_control_torque_mNm.col(i);
-            
-            // Extract actuator commands (4 values)
-            metric.a_command = a_command.col(i);
-            
-            // Extract state (15 values)
-            metric.state = state.col(i);
-            
-            // Extract distance (scalar)
-            metric.distance = distance(i);
-            
-            metrics.push_back(metric);
-        }
-        
-        // Write metrics to database in batches
-        Logger::info("Writing " + std::to_string(metrics.size()) + " metrics to database...");
-        const size_t BATCH_SIZE = 1000;
-        for (size_t i = 0; i < metrics.size(); i += BATCH_SIZE)
-        {
-            size_t end = std::min(i + BATCH_SIZE, metrics.size());
-            std::vector<SimulationMetric> batch(metrics.begin() + i, metrics.begin() + end);
-            db->writeMetrics(simulation_id, batch);
-            Logger::info("Written " + std::to_string(end) + " / " + std::to_string(metrics.size()) + " metrics");
+            size_t end = std::min(i + BATCH_SIZE, date_times.size());
+            db->writeMetricsDirect(simulation_id, timestamps, euler_angles, ang_mom_body_frame,
+                                   a_control_torque_mNm, a_command, state, distance, i, end);
+            Logger::info("Written " + std::to_string(end) + " / " + std::to_string(date_times.size()) + " metrics");
         }
         
         // Update status to completed

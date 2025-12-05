@@ -22,6 +22,7 @@ struct SimulationParams {
     double ground_station_elevation;
 };
 
+// This struct is used to store the metrics for a simulation. Currently not used.
 struct SimulationMetric {
     int step_index;
     int64_t timestamp; // milliseconds since epoch
@@ -46,9 +47,18 @@ public:
                                 const std::string& status,
                                 const std::string& error_message = "");
 
-    // Write metrics to database (batch insert for efficiency)
-    void writeMetrics(const std::string& simulation_id, 
-                      const std::vector<SimulationMetric>& metrics);
+    // Write metrics directly from matrices (avoids copying into SimulationMetric structs)
+    // This is much faster for large simulations
+    void writeMetricsDirect(const std::string& simulation_id,
+                           const std::vector<int64_t>& timestamps,
+                           const Eigen::Matrix3Xd& euler_angles,
+                           const Eigen::Matrix3Xd& ang_mom_body_frame,
+                           const Eigen::Matrix4Xd& a_control_torque,
+                           const Eigen::Matrix4Xd& a_command,
+                           const Eigen::MatrixXd& state,
+                           const Eigen::VectorXd& distance,
+                           size_t start_index,
+                           size_t end_index);
 
     // Create or update simulation parameters in database
     void createOrUpdateSimulationParams(const std::string& simulation_id, 

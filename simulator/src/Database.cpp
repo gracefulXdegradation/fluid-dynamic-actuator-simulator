@@ -124,68 +124,70 @@ void Database::updateSimulationStatus(const std::string& simulation_id,
     }
 }
 
-void Database::writeMetrics(const std::string& simulation_id, 
-                           const std::vector<SimulationMetric>& metrics) {
-    if (metrics.empty()) {
+void Database::writeMetricsDirect(const std::string& simulation_id,
+                                 const std::vector<int64_t>& timestamps,
+                                 const Eigen::Matrix3Xd& euler_angles,
+                                 const Eigen::Matrix3Xd& ang_mom_body_frame,
+                                 const Eigen::Matrix4Xd& a_control_torque,
+                                 const Eigen::Matrix4Xd& a_command,
+                                 const Eigen::MatrixXd& state,
+                                 const Eigen::VectorXd& distance,
+                                 size_t start_index,
+                                 size_t end_index) {
+    if (start_index >= end_index || end_index > timestamps.size()) {
         return;
     }
     
     try {
         pqxx::work txn(*conn_);
         
-        // Prepare batch insert using prepared statement approach
-        // We'll use a single transaction with multiple inserts for efficiency
-        std::string insert_query = 
-            "INSERT INTO simulation_metrics (simulation_id, step_index, timestamp, "
-            "euler_angles, ang_mom_body_frame, a_control_torque, a_command, state, distance) "
-            "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) "
-            "ON CONFLICT (simulation_id, step_index) DO NOTHING";
+        // Build a single multi-row INSERT statement for bulk insert
+        std::ostringstream query;
+        query.precision(15); // Ensure sufficient precision for double values
+        query << "INSERT INTO simulation_metrics (simulation_id, step_index, timestamp, "
+              << "euler_angles, ang_mom_body_frame, a_control_torque, a_command, state, distance) "
+              << "VALUES ";
         
-        // Use pipeline for batch inserts (more efficient)
-        for (const auto& metric : metrics) {
-            // Convert Eigen vectors to PostgreSQL array format
-            std::string euler_angles_str = "{" + 
-                std::to_string(metric.euler_angles(0)) + "," +
-                std::to_string(metric.euler_angles(1)) + "," +
-                std::to_string(metric.euler_angles(2)) + "}";
-            
-            std::string ang_mom_str = "{" + 
-                std::to_string(metric.ang_mom_body_frame(0)) + "," +
-                std::to_string(metric.ang_mom_body_frame(1)) + "," +
-                std::to_string(metric.ang_mom_body_frame(2)) + "}";
-            
-            std::string torque_str = "{" + 
-                std::to_string(metric.a_control_torque(0)) + "," +
-                std::to_string(metric.a_control_torque(1)) + "," +
-                std::to_string(metric.a_control_torque(2)) + "," +
-                std::to_string(metric.a_control_torque(3)) + "}";
-            
-            std::string command_str = "{" + 
-                std::to_string(metric.a_command(0)) + "," +
-                std::to_string(metric.a_command(1)) + "," +
-                std::to_string(metric.a_command(2)) + "," +
-                std::to_string(metric.a_command(3)) + "}";
-            
-            std::string state_str = "{";
-            for (int i = 0; i < 15; i++) {
-                state_str += std::to_string(metric.state(i));
-                if (i < 14) state_str += ",";
+        // Build VALUES clause for all metrics in the range
+        for (size_t i = start_index; i < end_index; ++i) {
+            if (i > start_index) {
+                query << ", ";
             }
-            state_str += "}";
             
-            txn.exec_params(insert_query,
-                simulation_id,
-                metric.step_index,
-                metric.timestamp,
-                euler_angles_str,
-                ang_mom_str,
-                torque_str,
-                command_str,
-                state_str,
-                metric.distance
-            );
+            // Escape simulation_id for SQL
+            query << "('" << txn.esc(simulation_id) << "', "
+                  << static_cast<int>(i) << ", "
+                  << timestamps[i] << ", "
+                  << "ARRAY[" << euler_angles(0, i) << ", "
+                             << euler_angles(1, i) << ", "
+                             << euler_angles(2, i) << "]::double precision[], "
+                  << "ARRAY[" << ang_mom_body_frame(0, i) << ", "
+                             << ang_mom_body_frame(1, i) << ", "
+                             << ang_mom_body_frame(2, i) << "]::double precision[], "
+                  << "ARRAY[" << a_control_torque(0, i) << ", "
+                             << a_control_torque(1, i) << ", "
+                             << a_control_torque(2, i) << ", "
+                             << a_control_torque(3, i) << "]::double precision[], "
+                  << "ARRAY[" << a_command(0, i) << ", "
+                             << a_command(1, i) << ", "
+                             << a_command(2, i) << ", "
+                             << a_command(3, i) << "]::double precision[], "
+                  << "ARRAY[";
+            
+            // Build state array - access by column index
+            for (int j = 0; j < 15; ++j) {
+                if (j > 0) query << ", ";
+                query << state(j, i);
+            }
+            
+            query << "]::double precision[], "
+                  << distance(i) << ")";
         }
         
+        query << " ON CONFLICT (simulation_id, step_index) DO NOTHING";
+        
+        // Execute the bulk insert
+        txn.exec(query.str());
         txn.commit();
     } catch (const std::exception& e) {
         throw std::runtime_error("Failed to write metrics: " + std::string(e.what()));
