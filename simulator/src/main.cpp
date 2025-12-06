@@ -459,6 +459,39 @@ int main(int argc, char* argv[])
         Matrix3Xd b_control_torque(3, date_times.size());
         Matrix4Xd a_command(4, date_times.size());
         std::vector<Quaterniond> q_bc(date_times.size());
+        
+        // Initialize matrices for incremental metric computation
+        Matrix3Xd euler_angles(3, date_times.size());
+        Matrix3Xd ang_mom_body_frame(3, date_times.size());
+        
+        // Prepare timestamps once (they don't change during simulation)
+        std::vector<int64_t> timestamps;
+        timestamps.reserve(date_times.size());
+        for (const auto& dt : date_times) {
+            timestamps.push_back(std::chrono::duration_cast<std::chrono::milliseconds>(
+                dt.time_since_epoch()).count());
+        }
+        
+        // Batch size for incremental writes
+        const size_t BATCH_SIZE = 1000; // Smaller batch size for more frequent updates
+        size_t last_written_index = 0;
+        
+        // Helper function to write metrics for a range of indices
+        // Note: euler_angles and ang_mom_body_frame should already be computed incrementally
+        auto writeMetricsBatch = [&](size_t start_idx, size_t end_idx) {
+            if (start_idx >= end_idx) return;
+            
+            // Convert a_control_torque from Nm to mNm (multiply by 1e3) for storage
+            Matrix4Xd a_control_torque_mNm = a_control_torque * 1e3;
+            
+            // Write to database (writeMetricsDirect expects full matrices and uses start_idx/end_idx internally)
+            db->writeMetricsDirect(simulation_id, timestamps, euler_angles, ang_mom_body_frame,
+                                   a_control_torque_mNm, a_command, state, distance, start_idx, end_idx);
+            
+            Logger::info("Written metrics batch: " + std::to_string(start_idx) + " to " + std::to_string(end_idx - 1) + 
+                        " (" + std::to_string(end_idx - start_idx) + " metrics)");
+        };
+        
         for (int i = 0; i < date_times.size() - 1; i++)
         {
             // ----- Control error -----
@@ -509,6 +542,26 @@ int main(int argc, char* argv[])
 
             odeint::integrate_const(odeint::runge_kutta4<Matrix<double, 15, 1>>(), system, x0, t0, t1, dt, observer);
             state.col(i + 1) = integrated_states.back();
+            
+            // Compute euler_angles for current step (needed for batch write)
+            q_bc[i].normalize();
+            euler_angles.col(i) = q_bc[i].toRotationMatrix().eulerAngles(2, 0, 2);
+            
+            // Compute ang_mom_body_frame for current step
+            std::vector<int> indices = {7, 9, 11, 13};
+            Vector4d selected_state;
+            selected_state << state(indices[0], i), state(indices[1], i), 
+                            state(indices[2], i), state(indices[3], i);
+            ang_mom_body_frame.col(i) = actuator_alignment * selected_state;
+            
+            // Write metrics incrementally in batches
+            // Note: At iteration i, we've computed metrics for step i, so we can write up to step i+1
+            // We write steps [last_written_index, i+1), which means we write steps last_written_index through i
+            if ((i + 1) % BATCH_SIZE == 0) {
+                size_t batch_end = i + 1; // Write up to (but not including) i+1, which means we write step i
+                writeMetricsBatch(last_written_index, batch_end);
+                last_written_index = batch_end;
+            }
         }
 
         // Calculate the Final State
@@ -530,48 +583,22 @@ int main(int argc, char* argv[])
         {
             a_command(j, last_index) = command_finder(0.0, actuator_state.col(j), a_control_torque(j, last_index));
         }
+        
+        // Compute euler_angles and ang_mom_body_frame for final index
+        q_bc[last_index].normalize();
+        euler_angles.col(last_index) = q_bc[last_index].toRotationMatrix().eulerAngles(2, 0, 2);
+        std::vector<int> indices = {7, 9, 11, 13};
+        Vector4d selected_state;
+        selected_state << state(indices[0], last_index), state(indices[1], last_index), 
+                        state(indices[2], last_index), state(indices[3], last_index);
+        ang_mom_body_frame.col(last_index) = actuator_alignment * selected_state;
+        
         Logger::info("Simulation complete!");
 
-        // Get angular momentum of actuator assembly in the body frame
-        std::vector<int> indices = {7, 9, 11, 13};
-        MatrixXd selected_rows(indices.size(), state.cols());
-        for (size_t i = 0; i < indices.size(); ++i)
-        {
-            selected_rows.row(i) = state.row(indices[i]);
-        }
-        auto ang_mom_body_frame = actuator_alignment * selected_rows;
-
-        // Euler's angles
-        Matrix3Xd euler_angles(3, q_bc.size());
-        for (int i = 0; i < q_bc.size(); i++)
-        {
-            q_bc[i].normalize();
-            // Extract Euler angles in 'zxz' sequence
-            // Note: The order 'zxz' corresponds to 2, 0, 2 in Eigen's eulerAngles
-            euler_angles.col(i) = q_bc[i].toRotationMatrix().eulerAngles(2, 0, 2);
-        }
-
-        // Prepare timestamps and convert a_control_torque from Nm to mNm (multiply by 1e3) for storage
-        Logger::info("Preparing data for database storage...");
-        std::vector<int64_t> timestamps;
-        timestamps.reserve(date_times.size());
-        for (const auto& dt : date_times) {
-            timestamps.push_back(std::chrono::duration_cast<std::chrono::milliseconds>(
-                dt.time_since_epoch()).count());
-        }
-        
-        // Convert a_control_torque from Nm to mNm (multiply by 1e3) for storage
-        Matrix4Xd a_control_torque_mNm = a_control_torque * 1e3;
-        
-        // Write metrics directly to database in batches
-        Logger::info("Writing " + std::to_string(date_times.size()) + " metrics to database...");
-        const size_t BATCH_SIZE = 10000; // Increased batch size since we're not creating intermediate objects
-        for (size_t i = 0; i < date_times.size(); i += BATCH_SIZE)
-        {
-            size_t end = std::min(i + BATCH_SIZE, date_times.size());
-            db->writeMetricsDirect(simulation_id, timestamps, euler_angles, ang_mom_body_frame,
-                                   a_control_torque_mNm, a_command, state, distance, i, end);
-            Logger::info("Written " + std::to_string(end) + " / " + std::to_string(date_times.size()) + " metrics");
+        // Write any remaining metrics that haven't been written yet
+        if (last_written_index < date_times.size()) {
+            Logger::info("Writing final metrics batch...");
+            writeMetricsBatch(last_written_index, date_times.size());
         }
         
         // Update status to completed

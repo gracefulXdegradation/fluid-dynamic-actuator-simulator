@@ -97,18 +97,26 @@ export async function listSimulations(
 
 // Get metrics for a simulation
 export async function getSimulationMetrics(
-  simulationId: string
+  simulationId: string,
+  sinceStep?: number,
+  limit?: number
 ): Promise<SimulationMetric[]> {
+  const where: Prisma.SimulationMetricWhereInput = {
+    simulation_id: simulationId,
+    ...(sinceStep !== undefined && { step_index: { gt: sinceStep } }),
+  };
+  
   const metrics = await prisma.simulationMetric.findMany({
-    where: { simulation_id: simulationId },
+    where,
     orderBy: { step_index: 'asc' },
+    take: limit, // limit is undefined if not provided, which means no limit
   });
   
   return metrics.map((metric) => ({
     id: metric.id,
     simulation_id: metric.simulation_id,
     step_index: metric.step_index,
-    timestamp: Number(metric.timestamp), // Convert BigInt to string
+    timestamp: Number(metric.timestamp), // Convert BigInt to number
     euler_angles: metric.euler_angles,
     ang_mom_body_frame: metric.ang_mom_body_frame,
     a_control_torque: metric.a_control_torque,
